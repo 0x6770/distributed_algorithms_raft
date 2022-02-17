@@ -1,6 +1,5 @@
-defmodule RaftTest do
+defmodule RaftTest.ClientReq do
   use ExUnit.Case
-  doctest Raft
 
   def add1(num) do
     num + 1

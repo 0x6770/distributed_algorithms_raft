@@ -53,6 +53,10 @@ run cluster: compile
 compile:
 	mix compile
 
+.PHONY: test
+test:
+	mix test --trace
+
 clean:
 	mix clean
 	@rm -f erl_crash.dump
@@ -60,5 +64,3 @@ clean:
 ps:
 	@echo ------------------------------------------------------------
 	epmd -names
-
-
