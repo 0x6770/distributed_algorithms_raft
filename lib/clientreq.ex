@@ -5,5 +5,7 @@
 defmodule ClientReq do
   # s = server process state (c.f. self/this)
 
-  # omitted
+  def receive_request_from_client(s, m) do
+    Helper.unimplemented([s, m])
+  end
 end
