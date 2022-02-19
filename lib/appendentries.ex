@@ -10,7 +10,7 @@ defmodule AppendEntries do
   end
 
   def receive_append_entries_request_from_leader(s, mterm, m) do
-    IO.put("received")
+    IO.puts("received")
     s
   end
 
@@ -31,7 +31,7 @@ defmodule AppendEntries do
       index when index == 0 ->
         %{
         index: s.commit_index,
-        entry: %{ term: s.curr_term, entry: command},
+        entry: %{ term: s.curr_term, command: command},
         last_term: 0
         }
       index when index > 0 ->

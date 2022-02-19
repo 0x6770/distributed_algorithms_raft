@@ -59,10 +59,10 @@ defmodule RaftTest.AppendEntries do
     follower = get_state(3,1)
     leader = Server.become_leader(follower)
     m = AppendEntries.create_m(leader,:command)
-    assert m =
+    assert m==
       %{
       index: 0,
-      entry: %{ term: 1, entry: :command},
+      entry: %{ term: 1, command: :command},
       last_term: 0
       }
   end
@@ -73,8 +73,9 @@ defmodule RaftTest.AppendEntries do
     assert leader.curr_term==1
     leader_after = ClientReq.receive_request_from_client(leader,:cmd1)
 
-    m = AppendEntries.create_m(leader,:cmd1)
-    assert_received({:APPEND_ENTRIES_REQUEST, 1, m})
+    m = AppendEntries.create_m(leader_after,:cmd1)
+    assert_received({:APPEND_ENTRIES_REQUEST, 1, got})
+    assert got==m
     assert Log.entry_at(leader_after,1)==%{term: 1,command: :cmd1}
     assert leader_after.commit_index==1
   end
