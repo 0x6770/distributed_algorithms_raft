@@ -3,29 +3,31 @@ defmodule Message do
   creates a basic message append entry
   """
   def initialise(s,command) do
-    case s.commit_index do
 
-      index when index == 0 ->
         %{
           index: s.commit_index,
           entry: %{ term: s.curr_term, command: command},
-          last_term: 0
+          last_term: Log.term_at(s,s.commit_index-1)
         }
 
-      index when index > 0 ->
-        %{
-          index: s.commit_index,
-          entry: %{ term: s.curr_term, command: command},
-          last_term: Log.term_at(s,index-1)
-        }
-      index ->
-        Helper.node_halt(
-          "************* AppendEntries: unexpected index #{inspect(index)}"
-        )
-    end #case s.commit
   end #initialise
+
+  def get(s)do
+      %{
+        index: s.commit_index,
+        entry: Log.entry_at(s, s.commit_index),
+        last_term: Log.term_at(s,s.commit_index-1)
+      }
+  end
 
   def index(m), do: m.index
   def entry(m), do: m.entry
   def last_term(m), do: m.last_term
+  def print(m) do
+    IO.puts(
+      "Index: #{m.index}
+      Entry: #{m.entry}
+      Last_term: #{m.last_term}
+      ")
+  end
 end #Message
