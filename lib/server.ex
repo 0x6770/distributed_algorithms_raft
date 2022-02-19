@@ -58,7 +58,6 @@ defmodule Server do
           s |> Debug.received("stale #{inspect(msg)}")
 
         # ---------- AppendEntries ---------------------------------------------
-
         # Leader >> All
         {:APPEND_ENTRIES_REQUEST, mterm, m} = msg ->
           s
@@ -126,7 +125,9 @@ defmodule Server do
   end
 
   def become_follower(s, mterm) do
-    Helper.unimplemented([s, mterm])
+    s
+    |> State.role(:FOLLOWER)
+    |> State.curr_term(mterm)
   end
 
   def become_candidate(s) do
@@ -134,7 +135,9 @@ defmodule Server do
   end
 
   def become_leader(s) do
-    Helper.unimplemented(s)
+    s
+    |> State.role(:LEADER)
+    |> State.inc_term
   end
 
   def execute_committed_entries(s) do

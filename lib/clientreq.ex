@@ -5,7 +5,32 @@
 defmodule ClientReq do
   # s = server process state (c.f. self/this)
 
-  def receive_request_from_client(s, m) do
-    Helper.unimplemented([s, m])
+  def receive_request_from_client(s, command) do
+    case s.role do
+      :LEADER ->
+        #commit to leader's log
+        s =
+          s
+          |> State.commit_index(s.commit_index + 1)
+          |> Log.append_entry(%{term: s.curr_term, command: command})
+
+        #Create message for send
+        m = AppendEntries.create_m(s,command)
+        #send append entries request to all servers
+        for server <- s.servers do
+          send(server,{:APPEND_ENTRIES_REQUEST, s.curr_term, m})
+        end
+        #return state of leader
+        s
+
+      :FOLLOWER ->
+        s
+      :CANDIDATE ->
+        s
+      unexpected ->
+        Helper.node_halt(
+        "************* Client_req: unexpected role of #{inspect(unexpected)}"
+        )
+    end
   end
 end

@@ -10,7 +10,8 @@ defmodule AppendEntries do
   end
 
   def receive_append_entries_request_from_leader(s, mterm, m) do
-    Helper.unimplemented([s, mterm, m])
+    IO.put("received")
+    s
   end
 
   def receive_append_entries_reply_from_follower(s, mterm, m) do
@@ -20,4 +21,31 @@ defmodule AppendEntries do
   def receive_append_entries_timeout(s, followerP) do
     Helper.unimplemented([s, followerP])
   end
+
+  @doc"""
+  creates a basic message append entry
+  """
+  def create_m(s,command) do
+
+    case s.commit_index do
+      index when index == 0 ->
+        %{
+        index: s.commit_index,
+        entry: %{ term: s.curr_term, entry: command},
+        last_term: 0
+        }
+      index when index > 0 ->
+        %{
+          index: s.commit_index,
+          entry: %{ term: s.curr_term, command: command},
+          last_term: Log.term_at(s,index-1)
+        }
+      index ->
+        Helper.node_halt(
+          "************* AppendEntries: unexpected index #{inspect(index)}"
+        )
+    end
+  end #create_m/2
+
+
 end
