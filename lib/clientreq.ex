@@ -15,7 +15,7 @@ defmodule ClientReq do
           |> Log.append_entry(%{term: s.curr_term, command: command})
 
         #Create message for send
-        m = AppendEntries.create_m(s,command)
+        m = Message.initialise(s,command)
         #send append entries request to all servers
         for server <- s.servers do
           send(server,{:APPEND_ENTRIES_REQUEST, s.curr_term, m})
