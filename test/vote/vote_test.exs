@@ -33,7 +33,7 @@ defmodule VoteTest do
 
     {term, candidateId, lastLogIndex, lastLogTerm} = msg
 
-    assert term == state.curr_term
+    assert term == 1 + state.curr_term
     assert candidateId == self()
     assert lastLogIndex == Log.last_index(state)
     assert lastLogTerm == Log.last_term(state)

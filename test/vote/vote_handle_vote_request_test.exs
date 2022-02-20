@@ -1,4 +1,4 @@
-defmodule VoteTest.ReceiveVoteRequest do
+defmodule VoteTest.HandleVoteRequest do
   use ExUnit.Case
 
   setup do
@@ -40,6 +40,7 @@ defmodule VoteTest.ReceiveVoteRequest do
     if lastLogIndex != 0 do
       state =
         List.foldl(Enum.to_list(1..(lastLogIndex - 1)), state, fn n, acc ->
+          IO.puts("n: #{n}")
           Log.append_entry(acc, {})
         end)
 
@@ -49,24 +50,41 @@ defmodule VoteTest.ReceiveVoteRequest do
     end
   end
 
-  def test_vote_receive_vote_request(candidate, follower, config, expect) do
+  def test_handle_vote_request(candidate, follower, config, expect) do
     {cCurrentTerm, cLastLogTerm, cLastLogIndex} = candidate
 
     fState = setup_state(follower, config)
 
     # msg: term, candidateId, lastLogIndex, lastLogTerm
-    msg = {cCurrentTerm, self(), cLastLogIndex, cLastLogTerm}
-    Vote.receive_vote_request(fState, msg)
+    msg = %{
+      term: cCurrentTerm,
+      candidateP: self(),
+      lastLogIndex: cLastLogIndex,
+      lastLogTerm: cLastLogTerm
+    }
+
+    fState = Vote.handle_vote_request(fState, msg)
 
     assert_received {:VOTE_REPLY, reply}
-    {term, voteGranted} = reply
+    %{followerP: _pid, term: term, voteGranted: voteGranted} = reply
+    assert fState.role == :FOLLOWER
     # check if the follower has voted as expected
-    assert voteGranted == expect
+    assert voteGranted == expect,
+           "actual = #{voteGranted}; expect = #{expect}\n" <>
+             "C.curr_term = #{inspect(cCurrentTerm)}\n" <>
+             "F.curr_term = #{inspect(fState.curr_term)}\n" <>
+             "C.last_term = #{inspect(cLastLogTerm)}\n" <>
+             "F.last_term = #{inspect(fState |> Log.last_term())}\n" <>
+             "C.last_index = #{inspect(cLastLogIndex)}\n" <>
+             "F.last_index = #{inspect(fState |> Log.last_index())}"
+
     # check if the follower has updated its currentTerm if needed
     assert term == max(cCurrentTerm, fState.curr_term),
            "actual = #{term}; expect = #{max(cCurrentTerm, fState.curr_term)}\n" <>
              "C.curr_term = #{inspect(cCurrentTerm)}\n" <>
              "F.curr_term = #{inspect(fState.curr_term)}"
+
+    # assert_receive({:ELECTION_TIMEOUT, _}, 2000, "vote = #{voteGranted}")
   end
 
   test "test Log.append_entry", config do
@@ -88,24 +106,52 @@ defmodule VoteTest.ReceiveVoteRequest do
     assert Log.last_index(state) == last_index
   end
 
-  test "test Vote.receive_vote_request() C.term < F.term", config do
+  test "test Vote.handle_vote_request() C.term < F.term", config do
     # { currentTerm, lastLogTerm, lastLogIndex }
     candidate = {1, 0, 0}
     follower = {2, 0, 0}
-    test_vote_receive_vote_request(candidate, follower, config, false)
+    test_handle_vote_request(candidate, follower, config, false)
   end
 
-  test "test Vote.receive_vote_request() C.term == F.term", config do
+  test "test Vote.handle_vote_request() C.term == F.term", config do
     # { currentTerm, lastLogTerm, lastLogIndex }
     candidate = {1, 0, 0}
     follower = {1, 0, 0}
-    test_vote_receive_vote_request(candidate, follower, config, true)
+    test_handle_vote_request(candidate, follower, config, true)
   end
 
-  test "test Vote.receive_vote_request() C.term > F.term", config do
+  test "test Vote.handle_vote_request() C.term > F.term", config do
     # { currentTerm, lastLogTerm, lastLogIndex }
     candidate = {2, 0, 0}
     follower = {1, 0, 0}
-    test_vote_receive_vote_request(candidate, follower, config, true)
+    test_handle_vote_request(candidate, follower, config, true)
+  end
+
+  test "test Vote.handle_vote_request() case 0", config do
+    # { currentTerm, lastLogTerm, lastLogIndex }
+    candidate = {6, 3, 2}
+    follower = {4, 1, 2}
+    test_handle_vote_request(candidate, follower, config, true)
+  end
+
+  test "test Vote.handle_vote_request() case 1", config do
+    # { currentTerm, lastLogTerm, lastLogIndex }
+    candidate = {6, 3, 1}
+    follower = {4, 4, 1}
+    test_handle_vote_request(candidate, follower, config, false)
+  end
+
+  test "test Vote.handle_vote_request() case 2", config do
+    # { currentTerm, lastLogTerm, lastLogIndex }
+    candidate = {6, 3, 2}
+    follower = {4, 3, 3}
+    test_handle_vote_request(candidate, follower, config, false)
+  end
+
+  test "test Vote.handle_vote_request() case 3", config do
+    # { currentTerm, lastLogTerm, lastLogIndex }
+    candidate = {6, 3, 14}
+    follower = {4, 3, 10}
+    test_handle_vote_request(candidate, follower, config, true)
   end
 end
