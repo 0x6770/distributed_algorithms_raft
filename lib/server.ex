@@ -18,11 +18,7 @@ defmodule Server do
         |> Timer.restart_election_timer()
         |> Server.next()
     end
-
-    # receive
   end
-
-  # start
 
   # ---------- Server.next() -----------------------------------------------------
   def next(s) do
