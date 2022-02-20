@@ -18,11 +18,7 @@ defmodule Server do
         |> Timer.restart_election_timer()
         |> Server.next()
     end
-
-    # receive
   end
-
-  # start
 
   # ---------- Server.next() -----------------------------------------------------
   def next(s) do
@@ -123,18 +119,6 @@ defmodule Server do
 
   def follower_if_higher(s, mterm) do
     Helper.unimplemented([s, mterm])
-  end
-
-  def become_follower(s, mterm) do
-    Helper.unimplemented([s, mterm])
-  end
-
-  def become_candidate(s) do
-    Helper.unimplemented(s)
-  end
-
-  def become_leader(s) do
-    Helper.unimplemented(s)
   end
 
   def execute_committed_entries(s) do
