@@ -4,6 +4,8 @@
 defmodule State do
   # s = server process state (c.f. self/this)
 
+  @type state :: map()
+
   # ---------- State.initialise() ----------------------------------------------
   def initialise(config, server_num, servers, databaseP) do
     # initialise state variables for server

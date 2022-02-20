@@ -1,4 +1,4 @@
-defmodule VoteTest.ReceiveVoteReply do
+defmodule VoteTest.HandleVoteReply do
   use ExUnit.Case
 
   setup do
@@ -46,12 +46,12 @@ defmodule VoteTest.ReceiveVoteReply do
     end
   end
 
-  def test_vote_receive_vote_reply(candidate, voteGranted, term, config) do
+  def test_handle_vote_reply(candidate, voteGranted, term, config) do
     cState = setup_state(candidate, config)
 
     # msg: followerId, voteGranted, follower.curr_term
-    msg = {self(), voteGranted, term}
-    Vote.receive_vote_reply(cState, msg)
+    msg = %{followerP: self(), voteGranted: voteGranted, term: term}
+    Vote.handle_vote_reply(cState, msg)
 
     if voteGranted do
       assert_received :APPEND_ENTRIES_REQUEST
@@ -78,9 +78,9 @@ defmodule VoteTest.ReceiveVoteReply do
     assert_received(:testing)
   end
 
-  test "test Vote.test_vote_receive_vote_reply() voteGranted = true", config do
+  test "test Vote.handle_vote_reply() voteGranted = true", config do
     # { currentTerm, voteTally, servers }
     candidate = {2, 1, 3}
-    test_vote_receive_vote_reply(candidate, true, 2, config)
+    test_handle_vote_reply(candidate, true, 2, config)
   end
 end
