@@ -17,12 +17,8 @@ defmodule Server do
         State.initialise(config, server_num, servers, databaseP)
         |> Timer.restart_election_timer()
         |> Server.next()
-    end
-
-    # receive
-  end
-
-  # start
+      end # receive
+    end # start
 
   # ---------- Server.next() -----------------------------------------------------
   def next(s) do
@@ -59,16 +55,16 @@ defmodule Server do
 
         # ---------- AppendEntries ---------------------------------------------
         # Leader >> All
-        {:APPEND_ENTRIES_REQUEST, mterm, m} = msg ->
+        {:APPEND_ENTRIES_REQUEST, m} = msg ->
           s
           |> Debug.message("-areq", msg)
-          |> AppendEntries.receive_append_entries_request_from_leader(mterm, m)
+          |> AppendEntries.receive_append_entries_request_from_leader(m)
 
         # Follower >> Leader
-        {:APPEND_ENTRIES_REPLY, mterm, m} = msg ->
+        {:APPEND_ENTRIES_REPLY, m} = msg ->
           s
           |> Debug.message("-arep", msg)
-          |> AppendEntries.receive_append_entries_reply_from_follower(mterm, m)
+          |> AppendEntries.receive_append_entries_reply_from_follower(m)
 
         # Leader >> Leader
         {:APPEND_ENTRIES_TIMEOUT, _mterm, followerP} = msg ->
@@ -138,6 +134,8 @@ defmodule Server do
     s
     |> State.role(:LEADER)
     |> State.inc_term
+    |> State.init_next_index
+    |> State.init_match_index
   end
 
   def execute_committed_entries(s) do
