@@ -106,4 +106,9 @@ defmodule Debug do
 
     s
   end
+
+  # ---------- Debug.log() -----------------------------------------------------
+  def log(msg) do
+    IO.write("#{System.os_time()} => #{msg}\n")
+  end
 end

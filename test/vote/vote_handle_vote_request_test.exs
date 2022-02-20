@@ -40,7 +40,6 @@ defmodule VoteTest.HandleVoteRequest do
     if lastLogIndex != 0 do
       state =
         List.foldl(Enum.to_list(1..(lastLogIndex - 1)), state, fn n, acc ->
-          IO.puts("n: #{n}")
           Log.append_entry(acc, {})
         end)
 

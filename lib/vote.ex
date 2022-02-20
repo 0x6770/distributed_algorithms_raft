@@ -37,6 +37,8 @@ defmodule Vote do
       lastLogTerm: cLastLogTerm
     } = msgIncome
 
+    Debug.log("receive vote_request from #{inspect(cId)}")
+
     last_term = state |> Log.last_term()
     last_index = state |> Log.last_index()
 
@@ -122,10 +124,7 @@ defmodule Vote do
 
       # Got vote from majority, become leader
       if(state |> State.vote_tally() >= state.majority) do
-        IO.puts(
-          IO.ANSI.green() <>
-            "I'm leader now !\n" <> IO.ANSI.reset()
-        )
+        Debug.log("I'm leader now !")
 
         # Transit to Leader
         state = state |> State.role(:LEADER) |> Timer.cancel_election_timer()
@@ -133,7 +132,7 @@ defmodule Vote do
         # Send AppendEntries request to all servers
         for server <- state.servers do
           state |> Timer.restart_append_entries_timer(server)
-          send(server, :APPEND_ENTRIES_REQUEST)
+          send(server, {:APPEND_ENTRIES_REQUEST})
         end
 
         state
@@ -150,7 +149,7 @@ defmodule Vote do
   # 2. Transit to Candidate
   # 3. Vote for self
   # 4. Send vote request
-  def receive_election_timeout(state) do
+  def handle_election_timeout(state) do
     state =
       state
       # 1. Increment current term
@@ -163,14 +162,20 @@ defmodule Vote do
       |> State.add_to_voted_by(state.selfP)
       |> Timer.restart_election_timer()
 
-    IO.puts("I am candidate now !")
+    Debug.log("I am candidate now !")
+    # IO.puts("#{System.os_time()} => I am candidate now !")
 
     # 4. Send vote request
-    %{selfP: candidateId, curr_term: term} = state
+    %{selfP: candidateP, curr_term: term} = state
     lastLogIndex = Log.last_index(state)
     lastLogTerm = Log.last_term(state)
 
-    msg = {term, candidateId, lastLogIndex, lastLogTerm}
+    msg = %{
+      term: term,
+      candidateP: candidateP,
+      lastLogIndex: lastLogIndex,
+      lastLogTerm: lastLogTerm
+    }
 
     for server <- state.servers do
       send(server, {:VOTE_REQUEST, msg})
