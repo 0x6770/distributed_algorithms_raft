@@ -22,12 +22,12 @@ defmodule VoteTest do
     ]
   end
 
-  test "test Vote.receive_election_timeout()" do
+  test "test Vote.handle_election_timeout()" do
     config = Configuration.node_init(argv())
     config = Configuration.node_info(config, "test")
     state = State.initialise(config, 1, [self()], self())
 
-    state |> Vote.receive_election_timeout()
+    state |> Vote.handle_election_timeout()
 
     assert_received {:VOTE_REQUEST, msg}
 

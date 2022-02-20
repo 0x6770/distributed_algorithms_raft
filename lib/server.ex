@@ -39,16 +39,6 @@ defmodule Server do
           |> Debug.message("-areq", "stale #{mterm} #{inspect(m)}")
           |> AppendEntries.send_entries_reply_to_leader(m.leaderP)
 
-        # Reject, send votedGranted=false and newer_term in reply
-        {:VOTE_REQUEST, mterm, m} when mterm < curr_term ->
-          s
-          |> Debug.message("-vreq", "stale #{mterm} #{inspect(m)}")
-          |> Vote.send_vote_reply_to_candidate(m.candidateP, false)
-
-        {:ELECTION_TIMEOUT, _mterm, melection} = msg
-        when melection < curr_election ->
-          s |> Debug.received("Old Election Timeout #{inspect(msg)}")
-
         # Discard any other stale messages
         {_mtype, mterm, _m} = msg when mterm < curr_term ->
           s |> Debug.received("stale #{inspect(msg)}")
@@ -75,37 +65,30 @@ defmodule Server do
         # ---------- Vote ------------------------------------------------------
 
         # Candidate >> All
-        {:VOTE_REQUEST, mterm, m} = msg ->
+        {:VOTE_REQUEST, msg} = dmsg ->
           s
-          |> Debug.message("-vreq", msg)
-          |> Vote.receive_vote_request_from_candidate(mterm, m)
+          |> Debug.message("-vreq", dmsg)
+          |> Vote.handle_vote_request(msg)
 
         # Follower >> Candidate
-        {:VOTE_REPLY, mterm, m} = msg ->
-          if m.election < curr_election do
-            s
-            |> Debug.received(
-              "Discard Reply to old Vote Request #{inspect(msg)}"
-            )
-          else
-            s
-            |> Debug.message("-vrep", msg)
-            |> Vote.receive_vote_reply_from_follower(mterm, m)
-          end
+        {:VOTE_REPLY, msg} = dmsg ->
+          s
+          |> Debug.message("-vrep", dmsg)
+          |> Vote.handle_vote_reply(msg)
 
         # Self {Follower, Candidate} >> Self
-        {:ELECTION_TIMEOUT, _mterm, _melection} = msg ->
+        {:ELECTION_TIMEOUT, _} = msg ->
           s
           |> Debug.received("-etim", msg)
-          |> Vote.receive_election_timeout()
+          |> Vote.handle_election_timeout()
 
         # ---------- ClientReq -------------------------------------------------
 
         # Client >> Leader
-        {:CLIENT_REQUEST, m} = msg ->
+        {:CLIENT_REQUEST, msg} = dmsg ->
           s
-          |> Debug.message("-creq", msg)
-          |> ClientReq.receive_request_from_client(m)
+          |> Debug.message("-creq", dmsg)
+          |> ClientReq.handle_client_request(msg)
 
         unexpected ->
           Helper.node_halt(
@@ -133,12 +116,13 @@ defmodule Server do
   def become_leader(s) do
     s
     |> State.role(:LEADER)
-    |> State.inc_term
-    |> State.init_next_index
-    |> State.init_match_index
+    |> State.inc_term()
+    |> State.init_next_index()
+    |> State.init_match_index()
   end
 
   def execute_committed_entries(s) do
-    Helper.unimplemented(s)
+    # Helper.unimplemented(s)
+    s
   end
 end
