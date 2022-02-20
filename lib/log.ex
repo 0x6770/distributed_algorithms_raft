@@ -37,4 +37,16 @@ defmodule Log do
   # delete s.log[from..last] keep rest
   def delete_entries_from(s, from),
     do: Log.delete_entries(s, from..Log.last_index(s))
+
+  # prints log out for debugging
+  def print(log) do
+    case map_size(log) do
+      0 -> IO.puts("empty\n")
+      _ ->
+        # IO.puts("index  {T,cmd}")
+        for {index,entry} <- log do
+          IO.puts("#{index}: {#{entry.term}, #{entry.command}}")
+        end
+    end
+  end
 end

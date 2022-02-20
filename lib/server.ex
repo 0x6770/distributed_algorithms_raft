@@ -37,7 +37,7 @@ defmodule Server do
         {:APPEND_ENTRIES_REQUEST, mterm, m} when mterm < curr_term ->
           s
           |> Debug.message("-areq", "stale #{mterm} #{inspect(m)}")
-          |> AppendEntries.send_entries_reply_to_leader(m.leaderP, false)
+          |> AppendEntries.send_entries_reply_to_leader(m.leaderP)
 
         # Reject, send votedGranted=false and newer_term in reply
         {:VOTE_REQUEST, mterm, m} when mterm < curr_term ->
@@ -54,18 +54,17 @@ defmodule Server do
           s |> Debug.received("stale #{inspect(msg)}")
 
         # ---------- AppendEntries ---------------------------------------------
-
         # Leader >> All
-        {:APPEND_ENTRIES_REQUEST, mterm, m} = msg ->
+        {:APPEND_ENTRIES_REQUEST, _mterm, m} = msg ->
           s
           |> Debug.message("-areq", msg)
-          |> AppendEntries.receive_append_entries_request_from_leader(mterm, m)
+          |> AppendEntries.receive_append_entries_request_from_leader(m)
 
         # Follower >> Leader
-        {:APPEND_ENTRIES_REPLY, mterm, m} = msg ->
+        {:APPEND_ENTRIES_REPLY, _mterm, m} = msg ->
           s
           |> Debug.message("-arep", msg)
-          |> AppendEntries.receive_append_entries_reply_from_follower(mterm, m)
+          |> AppendEntries.receive_append_entries_reply_from_follower(m)
 
         # Leader >> Leader
         {:APPEND_ENTRIES_TIMEOUT, _mterm, followerP} = msg ->
@@ -119,6 +118,24 @@ defmodule Server do
 
   def follower_if_higher(s, mterm) do
     Helper.unimplemented([s, mterm])
+  end
+
+  def become_follower(s, mterm) do
+    s
+    |> State.role(:FOLLOWER)
+    |> State.curr_term(mterm)
+  end
+
+  def become_candidate(s) do
+    Helper.unimplemented(s)
+  end
+
+  def become_leader(s) do
+    s
+    |> State.role(:LEADER)
+    |> State.inc_term
+    |> State.init_next_index
+    |> State.init_match_index
   end
 
   def execute_committed_entries(s) do
