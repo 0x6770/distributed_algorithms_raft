@@ -17,8 +17,8 @@ defmodule Server do
         State.initialise(config, server_num, servers, databaseP)
         |> Timer.restart_election_timer()
         |> Server.next()
-      end # receive
-    end # start
+    end
+  end
 
   # ---------- Server.next() -----------------------------------------------------
   def next(s) do
