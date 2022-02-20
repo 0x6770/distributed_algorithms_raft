@@ -91,6 +91,11 @@ defmodule RaftTest.AppendEntries do
         {follower,leader}
   end
 
+  # def receive_request(follower,leader):
+  #   message.get(leader)
+  #   follower = AppendEntries.receive_append_entries_request_from_leader(follower,message)
+
+
 #***************** Test Starts here **************************
   test "test Become Leader" do
     s = get_state(3,1)
@@ -325,13 +330,22 @@ defmodule RaftTest.AppendEntries do
     assert Log.last_index(follower)==3
   end
 
-  test "test send entry reply to old leader"do
-    {follower,leader} = term1_Case()
+  # test "test send entry reply to old leader"do
+  #   {follower,leader} = term1_Case()
 
-    new_leader = Server.become_leader(follower)
-    #TO BE TESTED
+  #   leader = get_requests(leader,4..5)
+  #   new_leader = Server.become_leader(follower)
+  #   new_leader = get_requests(new_leader,6..7)
+  #   follower = Server.become_follower(new_leader,2)
 
 
-  end
+  #   check_log(new_leader,"new leader")
+  #   check_log(leader,"old leader")
+  #   check_log(follower,"follower")
+
+  #   Message.get(new leader)
+
+
+  # end
 
 end
