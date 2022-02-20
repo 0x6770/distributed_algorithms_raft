@@ -17,6 +17,15 @@ defmodule Reply do
     }
   end
 
+  def not_leader(s) do
+    %{
+      follower: s.leaderP,
+      term: s.curr_term,
+      committed: false,
+      request_index: nil
+    }
+  end
+
   def term(m), do: m.term
   def committed(m), do: m.committed
   def request_index(m), do: m.request_index

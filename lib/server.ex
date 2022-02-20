@@ -37,7 +37,7 @@ defmodule Server do
         {:APPEND_ENTRIES_REQUEST, mterm, m} when mterm < curr_term ->
           s
           |> Debug.message("-areq", "stale #{mterm} #{inspect(m)}")
-          |> AppendEntries.send_entries_reply_to_leader(m.leaderP, false)
+          |> AppendEntries.send_entries_reply_to_leader(m.leaderP)
 
         # Reject, send votedGranted=false and newer_term in reply
         {:VOTE_REQUEST, mterm, m} when mterm < curr_term ->

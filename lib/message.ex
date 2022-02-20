@@ -45,14 +45,14 @@ defmodule Message do
 
   def print(m) do
     IO.puts(
-      "LeaderP: #{inspect{m.leaderP}}
-      Term: #{m.term}
-      Index: #{m.index}
-      Entry:")
-        Log.print(m.entries)
-    IO.puts("
-      Last_index: #{m.last_index}
-      Last_term: #{m.last_term}
-      ")
+"LeaderP: #{inspect{m.leaderP}}
+Term: #{m.term}
+Index: #{m.index}
+Entry:")
+Log.print(m.entries)
+IO.puts("
+Last_index: #{m.last_index}
+Last_term: #{m.last_term}
+")
   end
 end #Message
