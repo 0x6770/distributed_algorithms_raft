@@ -14,6 +14,18 @@ defmodule Message do
 
   end #initialise
 
+  def heartbeat(s,command) do
+    %{
+      leaderP: self(),
+      term: s.curr_term,
+      index: Log.last_index(s),
+      entries: %{},
+      last_index: Log.last_index(s)-1,
+      last_term: Log.term_at(s,Log.last_index(s)-1)
+    }
+
+end #initialise
+
   def log_from(s,index) do
     %{
       leaderP: self(),
