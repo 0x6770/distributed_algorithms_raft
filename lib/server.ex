@@ -55,13 +55,13 @@ defmodule Server do
 
         # ---------- AppendEntries ---------------------------------------------
         # Leader >> All
-        {:APPEND_ENTRIES_REQUEST, m} = msg ->
+        {:APPEND_ENTRIES_REQUEST, _mterm, m} = msg ->
           s
           |> Debug.message("-areq", msg)
           |> AppendEntries.receive_append_entries_request_from_leader(m)
 
         # Follower >> Leader
-        {:APPEND_ENTRIES_REPLY, m} = msg ->
+        {:APPEND_ENTRIES_REPLY, _mterm, m} = msg ->
           s
           |> Debug.message("-arep", msg)
           |> AppendEntries.receive_append_entries_reply_from_follower(m)

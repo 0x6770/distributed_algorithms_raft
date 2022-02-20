@@ -18,7 +18,7 @@ defmodule ClientReq do
         m = Message.initialise(s,command)
         #send append entries request to all servers
         for server <- s.servers do
-          send(server,{:APPEND_ENTRIES_REQUEST, m})
+          send(server,{:APPEND_ENTRIES_REQUEST,Message.term(m), m})
         end
         #return state of leader
         s

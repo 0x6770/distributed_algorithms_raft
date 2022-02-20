@@ -10,8 +10,22 @@ defmodule AppendEntries do
 
   def receive_append_entries_request_from_leader(s, m) do
     case s.role do
-      :LEADER ->
+      :CANDIDATE->
         s
+      :LEADER ->
+        case s.curr_term < Message.term(m) do
+          true ->
+            s
+            |> Server.become_follower(s)
+            |> State.curr_term(Message.term(m))
+            |> State.match_index(Map.new())
+            |> State.next_index(Map.new())
+            |> receive_append_entries_request_from_leader(m)
+          false ->
+            Helper.node_halt(
+              "************* stale request insdie receive request from leader: unexpected entry"
+              )
+        end
       :FOLLOWER ->
         #catch up with current term, else remain same
         s =
@@ -26,23 +40,28 @@ defmodule AppendEntries do
         #check term, check commit
         case check_commit(s,m) do
           :stale ->
-            s
+            Helper.node_halt(
+              "************* stale request insdie receive request from leader: unexpected entry"
+              )
           :merge ->
             s =
               s
               |> Log.merge_entries(Message.entries(m))
               |> State.commit_index(Message.index(m))
-            send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.success(s)})
+            reply = Reply.success(s)
+            send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY, Reply.term(reply),reply})
             s
           :request ->
-            send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.fail(s)})
+            reply = Reply.fail(s)
+            send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.term(reply),reply})
             s
           :pop ->
             s =
               s
               |> State.commit_index(Message.last_index(m)-1)
               |> Log.delete_entries_from(Message.last_index(m))
-            send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.fail(s)})
+            reply = Reply.fail(s)
+            send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.term(reply),reply})
             s
           :repair ->
             s =
@@ -50,7 +69,8 @@ defmodule AppendEntries do
               |> Log.delete_entries_from(Message.last_index(m)+1)
               |> Log.merge_entries(Message.entries(m))
               |> State.commit_index(Message.index(m))
-            send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.success(s)})
+            reply = Reply.success(s)
+            send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.term(reply),reply})
           :notyet->
             Helper.node_halt(
             "************* Append Entries request from leader: unexpected entry}"
@@ -62,12 +82,15 @@ defmodule AppendEntries do
   def receive_append_entries_reply_from_follower(s, m) do
     cond do
       Reply.term(m) < s.curr_term ->
-        s
+        Helper.node_halt(
+              "************* stale request insdie receive request from leader: unexpected entry"
+              )
       Reply.committed(m)==true ->
         s
         |> State.next_index(Reply.follower(m),Reply.request_index(m))
       Reply.committed(m)==false ->
-        send(Reply.follower(m),{:APPEND_ENTRIES_REQUEST,Message.log_from(s,Reply.request_index(m))})
+        msg = Message.log_from(s,Reply.request_index(m))
+        send(Reply.follower(m),{:APPEND_ENTRIES_REQUEST,Message.term(msg),msg})
         s
     end
   end

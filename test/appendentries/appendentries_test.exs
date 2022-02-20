@@ -35,7 +35,7 @@ defmodule RaftTest.AppendEntries do
     #Leader forwards by 3
     Enum.reduce(range,s,fn i,s ->
       s = ClientReq.receive_request_from_client(s,:"cmd#{i}")
-      assert_received({:APPEND_ENTRIES_REQUEST, _message})
+      assert_received({:APPEND_ENTRIES_REQUEST, _term,_message})
       s
     end)
   end
@@ -79,7 +79,8 @@ defmodule RaftTest.AppendEntries do
     leader_after = ClientReq.receive_request_from_client(leader,:cmd1)
 
     m = Message.initialise(leader_after,:cmd1)
-    assert_received({:APPEND_ENTRIES_REQUEST, got})
+    assert_received({:APPEND_ENTRIES_REQUEST,term, got})
+    assert term==Message.term(got)
     assert got==m
     assert Log.entry_at(leader_after,1)==%{term: 1,command: :cmd1}
     assert leader_after.commit_index==1
@@ -96,7 +97,8 @@ defmodule RaftTest.AppendEntries do
 
     follower = AppendEntries.receive_append_entries_request_from_leader(follower,msg)
     success = Reply.success(follower)
-    assert_received({:APPEND_ENTRIES_REPLY, reply})
+    assert_received({:APPEND_ENTRIES_REPLY,term, reply})
+    assert term==Reply.term(reply)
     assert reply==success
 
     assert follower.commit_index==1
@@ -129,7 +131,8 @@ defmodule RaftTest.AppendEntries do
 
     follower = AppendEntries.receive_append_entries_request_from_leader(follower,msg)
     failed = Reply.fail(follower)
-    assert_received({:APPEND_ENTRIES_REPLY, reply})
+    assert_received({:APPEND_ENTRIES_REPLY,term, reply})
+    assert term==Reply.term(reply)
     assert reply==failed
 
 
@@ -152,19 +155,22 @@ defmodule RaftTest.AppendEntries do
     follower = AppendEntries.receive_append_entries_request_from_leader(follower,msg)
     failed = Reply.fail(follower)
     # Reply.print(failed)
-    assert_received({:APPEND_ENTRIES_REPLY, reply})
+    assert_received({:APPEND_ENTRIES_REPLY,term, reply})
+    assert term==Reply.term(reply)
     assert reply==failed
     assert Reply.request_index(failed)==1
 
     #Leader sends updated Append Entries request
     leader = AppendEntries.receive_append_entries_reply_from_follower(leader,reply)
-    assert_received({:APPEND_ENTRIES_REQUEST, message})
+    assert_received({:APPEND_ENTRIES_REQUEST,term, message})
+    assert term==Message.term(message)
     assert message == Message.log_from(leader,Reply.request_index(failed))
 
     # Message.print(message)
     follower = AppendEntries.receive_append_entries_request_from_leader(follower,message)
     success = Reply.success(follower)
-    assert_received({:APPEND_ENTRIES_REPLY, reply})
+    assert_received({:APPEND_ENTRIES_REPLY, term, reply})
+    assert term==Reply.term(reply)
     assert reply==success
     assert leader.log==follower.log
 
@@ -189,19 +195,22 @@ defmodule RaftTest.AppendEntries do
     follower = AppendEntries.receive_append_entries_request_from_leader(follower,msg)
     failed = Reply.fail(follower)
     # Reply.print(failed)
-    assert_received({:APPEND_ENTRIES_REPLY, reply})
+    assert_received({:APPEND_ENTRIES_REPLY,term, reply})
+    assert term==Reply.term(reply)
     assert reply==failed
     assert Reply.request_index(failed)==1
 
     #Leader sends updated Append Entries request
     leader = AppendEntries.receive_append_entries_reply_from_follower(leader,reply)
-    assert_received({:APPEND_ENTRIES_REQUEST, message})
+    assert_received({:APPEND_ENTRIES_REQUEST,term, message})
+    assert term==Message.term(message)
     assert message == Message.log_from(leader,Reply.request_index(failed))
 
     # Message.print(message)
     follower = AppendEntries.receive_append_entries_request_from_leader(follower,message)
     success = Reply.success(follower)
-    assert_received({:APPEND_ENTRIES_REPLY, reply})
+    assert_received({:APPEND_ENTRIES_REPLY,term, reply})
+    assert term==Reply.term(reply)
     assert reply==success
     assert leader.log==follower.log
 
@@ -225,8 +234,8 @@ defmodule RaftTest.AppendEntries do
       |> State.next_index(2)
       |> State.match_index(1)
 
-    check_log(leader,"leader")
-    check_log(follower,"follower")
+    # check_log(leader,"leader")
+    # check_log(follower,"follower")
     assert Log.last_index(leader)==leader.commit_index
 
     # set-up
@@ -248,16 +257,18 @@ defmodule RaftTest.AppendEntries do
     # Follower pops all entries after last_index
     follower = AppendEntries.receive_append_entries_request_from_leader(follower,message)
     fail = Reply.fail(follower)
-    assert_received({:APPEND_ENTRIES_REPLY, reply})
+    assert_received({:APPEND_ENTRIES_REPLY,term, reply})
+    assert term==Reply.term(reply)
     assert reply==fail
-    Reply.print(reply)
+    # Reply.print(reply)
     assert follower.commit_index==1
     # check_log(follower,"follower")
 
     #Leader provides logs from index requested
     leader = AppendEntries.receive_append_entries_reply_from_follower(leader,reply)
     message = Message.log_from(leader,Reply.request_index(reply))
-    assert_received({:APPEND_ENTRIES_REQUEST, msg})
+    assert_received({:APPEND_ENTRIES_REQUEST, term, msg})
+    assert term==Message.term(msg)
     assert msg==message
     # check_log(leader,"leader")
     # check_log(follower,"follower")
@@ -265,7 +276,8 @@ defmodule RaftTest.AppendEntries do
     #Follower appends entries from leader and returns with success
     follower = AppendEntries.receive_append_entries_request_from_leader(follower,message)
     success = Reply.success(follower)
-    assert_received({:APPEND_ENTRIES_REPLY, reply})
+    assert_received({:APPEND_ENTRIES_REPLY,term, reply})
+    assert term==Reply.term(reply)
     assert reply==success
     assert follower.commit_index==3
 
