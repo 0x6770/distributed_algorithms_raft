@@ -7,7 +7,7 @@ defmodule Message do
           leaderP: self(),
           term: s.curr_term,
           index: s.commit_index,
-          entries: %{ term: s.curr_term, command: command},
+          entries: %{ s.commit_index => %{ term: s.curr_term, command: command}},
           last_index: s.commit_index-1,
           last_term: Log.term_at(s,s.commit_index-1)
         }
@@ -30,7 +30,7 @@ defmodule Message do
         leaderP: self(),
         term: s.curr_term,
         index: s.commit_index,
-        entries: Log.entry_at(s, s.commit_index),
+        entries: %{s.commit_index => Log.entry_at(s, s.commit_index)},
         last_index: s.commit_index-1,
         last_term: Log.term_at(s,s.commit_index-1)
       }
@@ -48,7 +48,9 @@ defmodule Message do
       "LeaderP: #{inspect{m.leaderP}}
       Term: #{m.term}
       Index: #{m.index}
-      Entry: #{Log.print(m.entries)}
+      Entry:")
+        Log.print(m.entries)
+    IO.puts("
       Last_index: #{m.last_index}
       Last_term: #{m.last_term}
       ")

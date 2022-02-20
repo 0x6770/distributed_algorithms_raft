@@ -4,7 +4,7 @@ defmodule Reply do
       follower: self(),
       term: s.curr_term,
       committed: true,
-      request_index: s.curr_term
+      request_index: s.commit_index
     }
   end
 
@@ -21,5 +21,16 @@ defmodule Reply do
   def committed(m), do: m.committed
   def request_index(m), do: m.request_index
   def follower(m), do: m.follower
+
+  def print(m) do
+    IO.puts(
+      "
+      follower: #{inspect(follower(m))},
+      term: #{term(m)},
+      committed: #{committed(m)},
+      request_index: #{request_index(m)}
+      "
+    )
+  end
 
 end #end

@@ -43,11 +43,10 @@ defmodule Log do
     case map_size(log) do
       0 -> IO.puts("empty\n")
       _ ->
-        IO.puts("index  {T,cmd}")
+        # IO.puts("index  {T,cmd}")
         for {index,entry} <- log do
           IO.puts("#{index}: {#{entry.term}, #{entry.command}}")
         end
-        IO.puts("\n")
     end
   end
 end

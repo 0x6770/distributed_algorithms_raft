@@ -27,13 +27,6 @@ defmodule AppendEntries do
         case check_commit(s,m) do
           :stale ->
             s
-          :append ->
-            s =
-              s
-              |> Log.append_entry(Message.entries(m))
-              |> State.commit_index(s.commit_index+1)
-            send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.success(s)})
-            s
           :merge ->
             s =
               s
@@ -44,13 +37,25 @@ defmodule AppendEntries do
           :request ->
             send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.fail(s)})
             s
-
+          :pop ->
+            s =
+              s
+              |> State.commit_index(Message.last_index(m)-1)
+              |> Log.delete_entries_from(Message.last_index(m))
+            send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.fail(s)})
+            s
+          :repair ->
+            s =
+              s
+              |> Log.delete_entries_from(Message.last_index(m)+1)
+              |> Log.merge_entries(Message.entries(m))
+              |> State.commit_index(Message.index(m))
+            send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.success(s)})
           :notyet->
             Helper.node_halt(
             "************* Append Entries request from leader: unexpected entry}"
             )
-        end
-
+        end# case check Commit
     end
   end
 
@@ -60,9 +65,9 @@ defmodule AppendEntries do
         s
       Reply.committed(m)==true ->
         s
-        |> s.next_index(Reply.follower(m),Reply.request_index(m))
+        |> State.next_index(Reply.follower(m),Reply.request_index(m))
       Reply.committed(m)==false ->
-        send(Reply.follower(m),Message.log_from(s,Reply.request_index(m)))
+        send(Reply.follower(m),{:APPEND_ENTRIES_REQUEST,Message.log_from(s,Reply.request_index(m))})
         s
     end
   end
@@ -71,21 +76,27 @@ defmodule AppendEntries do
     Helper.unimplemented([s, followerP])
   end
 
+  defp check_valid(s,m)do
+    Log.term_at(s,s.commit_index)==Message.last_term(m)
+  end
   defp check_commit(s,m) do
     cond do
       Message.term(m) < s.curr_term ->
         :stale
       s.commit_index==Message.last_index(m) ->
-        if Log.term_at(s,s.commit_index)==Message.last_term(m) do
-          case Message.index(m)==s.commit_index+1 do
-            true -> :append
-            false -> :merge
-          end
+        if check_valid(s,m) do
+          :merge
         else
-          :notyet
+          :pop
         end
       s.commit_index < Message.last_index(m) ->
         :request
+      s.commit_index > Message.last_index(m) ->
+        if check_valid(s,m) do
+          :repair
+        else
+          :pop
+        end
       true ->
         :notyet
     end
