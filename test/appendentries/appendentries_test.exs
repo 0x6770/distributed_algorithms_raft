@@ -83,7 +83,7 @@ defmodule RaftTest.AppendEntries do
     assert term==Message.term(got)
     assert got==m
     assert Log.entry_at(leader_after,1)==%{term: 1,command: :cmd1}
-    assert leader_after.commit_index==1
+    assert Log.last_index(leader_after)==1
   end
 
   test "test receive_append, basic" do
@@ -101,7 +101,7 @@ defmodule RaftTest.AppendEntries do
     assert term==Reply.term(reply)
     assert reply==success
 
-    assert follower.commit_index==1
+    assert Log.last_index(follower)==1
     # IO.puts("follower")
     # Log.print(follower.log)
     # IO.puts("Leader")
@@ -227,7 +227,6 @@ defmodule RaftTest.AppendEntries do
     leader=Server.become_leader(follower)
     assert leader.curr_term==2
     leader=Log.delete_entries_from(leader, 2)
-    leader=State.commit_index(leader,1)
     leader=
       leader
       |> get_requests(4..5)
@@ -236,7 +235,7 @@ defmodule RaftTest.AppendEntries do
 
     # check_log(leader,"leader")
     # check_log(follower,"follower")
-    assert Log.last_index(leader)==leader.commit_index
+
 
     # set-up
     # leader
@@ -261,7 +260,7 @@ defmodule RaftTest.AppendEntries do
     assert term==Reply.term(reply)
     assert reply==fail
     # Reply.print(reply)
-    assert follower.commit_index==1
+    assert Log.last_index(follower)==1
     # check_log(follower,"follower")
 
     #Leader provides logs from index requested
@@ -279,7 +278,7 @@ defmodule RaftTest.AppendEntries do
     assert_received({:APPEND_ENTRIES_REPLY,term, reply})
     assert term==Reply.term(reply)
     assert reply==success
-    assert follower.commit_index==3
+    assert Log.last_index(follower)==3
 
 
   end

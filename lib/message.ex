@@ -6,10 +6,10 @@ defmodule Message do
         %{
           leaderP: self(),
           term: s.curr_term,
-          index: s.commit_index,
-          entries: %{ s.commit_index => %{ term: s.curr_term, command: command}},
-          last_index: s.commit_index-1,
-          last_term: Log.term_at(s,s.commit_index-1)
+          index: Log.last_index(s),
+          entries: %{ Log.last_index(s) => %{ term: s.curr_term, command: command}},
+          last_index: Log.last_index(s)-1,
+          last_term: Log.term_at(s,Log.last_index(s)-1)
         }
 
   end #initialise
@@ -18,8 +18,8 @@ defmodule Message do
     %{
       leaderP: self(),
       term: s.curr_term,
-      index: s.commit_index,
-      entries: Log.get_entries(s,index..s.commit_index),
+      index: Log.last_index(s),
+      entries: Log.get_entries(s,index..Log.last_index(s)),
       last_index: index-1,
       last_term: Log.term_at(s,index-1)
     }
@@ -29,10 +29,10 @@ defmodule Message do
       %{
         leaderP: self(),
         term: s.curr_term,
-        index: s.commit_index,
-        entries: %{s.commit_index => Log.entry_at(s, s.commit_index)},
-        last_index: s.commit_index-1,
-        last_term: Log.term_at(s,s.commit_index-1)
+        index: Log.last_index(s),
+        entries: %{Log.last_index(s) => Log.entry_at(s, Log.last_index(s))},
+        last_index: Log.last_index(s)-1,
+        last_term: Log.term_at(s,Log.last_index(s)-1)
       }
   end
 

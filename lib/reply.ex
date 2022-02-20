@@ -4,7 +4,7 @@ defmodule Reply do
       follower: self(),
       term: s.curr_term,
       committed: true,
-      request_index: s.commit_index
+      request_index: Log.last_index(s)
     }
   end
 
@@ -13,7 +13,7 @@ defmodule Reply do
       follower: self(),
       term: s.curr_term,
       committed: false,
-      request_index: s.commit_index+1
+      request_index: Log.last_index(s)+1
     }
   end
 

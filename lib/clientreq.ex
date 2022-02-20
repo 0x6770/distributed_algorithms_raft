@@ -8,10 +8,9 @@ defmodule ClientReq do
   def receive_request_from_client(s, command) do
     case s.role do
       :LEADER ->
-        #commit to leader's log
+        #add to leader's log
         s =
           s
-          |> State.commit_index(s.commit_index + 1)
           |> Log.append_entry(%{term: s.curr_term, command: command})
 
         #Create message for send

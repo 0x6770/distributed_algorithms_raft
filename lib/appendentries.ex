@@ -47,7 +47,6 @@ defmodule AppendEntries do
             s =
               s
               |> Log.merge_entries(Message.entries(m))
-              |> State.commit_index(Message.index(m))
             reply = Reply.success(s)
             send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY, Reply.term(reply),reply})
             s
@@ -58,7 +57,6 @@ defmodule AppendEntries do
           :pop ->
             s =
               s
-              |> State.commit_index(Message.last_index(m)-1)
               |> Log.delete_entries_from(Message.last_index(m))
             reply = Reply.fail(s)
             send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.term(reply),reply})
@@ -68,7 +66,6 @@ defmodule AppendEntries do
               s
               |> Log.delete_entries_from(Message.last_index(m)+1)
               |> Log.merge_entries(Message.entries(m))
-              |> State.commit_index(Message.index(m))
             reply = Reply.success(s)
             send(Message.leaderP(m),{:APPEND_ENTRIES_REPLY,Reply.term(reply),reply})
           :notyet->
@@ -100,21 +97,21 @@ defmodule AppendEntries do
   end
 
   defp check_valid(s,m)do
-    Log.term_at(s,s.commit_index)==Message.last_term(m)
+    Log.term_at(s,Log.last_index(s))==Message.last_term(m)
   end
   defp check_commit(s,m) do
     cond do
       Message.term(m) < s.curr_term ->
         :stale
-      s.commit_index==Message.last_index(m) ->
+      Log.last_index(s)==Message.last_index(m) ->
         if check_valid(s,m) do
           :merge
         else
           :pop
         end
-      s.commit_index < Message.last_index(m) ->
+      Log.last_index(s) < Message.last_index(m) ->
         :request
-      s.commit_index > Message.last_index(m) ->
+      Log.last_index(s) > Message.last_index(m) ->
         if check_valid(s,m) do
           :repair
         else
