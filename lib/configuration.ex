@@ -3,17 +3,17 @@
 
 defmodule Configuration do
   # ---------- node_init() -----------------------------------------------------
-  def node_init() do
+  def node_init(argv) do
     # get node arguments and spawn a process to exit node after max_time
     config = %{
-      node_suffix: Enum.at(System.argv(), 0),
-      raft_timelimit: String.to_integer(Enum.at(System.argv(), 1)),
-      debug_level: String.to_integer(Enum.at(System.argv(), 2)),
-      debug_options: "#{Enum.at(System.argv(), 3)}",
-      n_servers: String.to_integer(Enum.at(System.argv(), 4)),
-      n_clients: String.to_integer(Enum.at(System.argv(), 5)),
-      setup: :"#{Enum.at(System.argv(), 6)}",
-      start_function: :"#{Enum.at(System.argv(), 7)}"
+      node_suffix: Enum.at(argv, 0),
+      raft_timelimit: String.to_integer(Enum.at(argv, 1)),
+      debug_level: String.to_integer(Enum.at(argv, 2)),
+      debug_options: "#{Enum.at(argv, 3)}",
+      n_servers: String.to_integer(Enum.at(argv, 4)),
+      n_clients: String.to_integer(Enum.at(argv, 5)),
+      setup: :"#{Enum.at(argv, 6)}",
+      start_function: :"#{Enum.at(argv, 7)}"
     }
 
     if config.n_servers < 3 do
