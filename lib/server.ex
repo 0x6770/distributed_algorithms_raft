@@ -121,18 +121,6 @@ defmodule Server do
     Helper.unimplemented([s, mterm])
   end
 
-  def become_follower(s, mterm) do
-    Helper.unimplemented([s, mterm])
-  end
-
-  def become_candidate(s) do
-    Helper.unimplemented(s)
-  end
-
-  def become_leader(s) do
-    Helper.unimplemented(s)
-  end
-
   def execute_committed_entries(s) do
     Helper.unimplemented(s)
   end
