@@ -5,7 +5,7 @@
 defmodule Vote do
   # s = server process state (c.f. self/this)
 
-  # -- Handle :VOTE_REPLY ------------------------------------------------------
+  # -- Handle :VOTE_REQUEST ----------------------------------------------------
   # Follower >> Candidate
   # state: State of caller (Follower)
   # msg: term, candidateId, lastLogIndex, lastLogTerm
@@ -40,8 +40,54 @@ defmodule Vote do
     end
   end
 
-  def receive_vote_reply_from_follower(s, mterm, m) do
-    Helper.unimplemented([s, mterm, m])
+  # -- Handle :VOTE_REQUEST ----------------------------------------------------
+  def receive_vote_reply(state, msgIncome) do
+    {followerId, voteGranted, term} = msgIncome
+
+    if voteGranted do
+      state =
+        state
+        |> Debug.assert(
+          term == state.curr_term,
+          "follower.curr_term should be the same as candidate.curr_term"
+        )
+        # vote is received from a follower 
+        |> State.add_to_voted_by(followerId)
+
+      IO.puts(
+        IO.ANSI.green() <>
+          "Got #{State.vote_tally(state)} vote." <>
+          "Majority is #{state.majority}" <> IO.ANSI.reset()
+      )
+
+      if(state |> State.vote_tally() >= state.majority) do
+        IO.puts(
+          IO.ANSI.green() <>
+            "I'm leader now !\n" <> IO.ANSI.reset()
+        )
+
+        # Transit to Leader
+        state |> State.role(:LEADER)
+        # Send AppendEntries request to all servers
+        for server <- state.servers do
+          send(server, :APPEND_ENTRIES_REQUEST)
+        end
+
+        state
+      else
+        state
+      end
+    else
+      # vote is rejected by a follower 
+      if term > state.curr_term do
+        state
+        |> State.curr_term(term)
+        |> State.role(:FOLLOWER)
+        |> Timer.restart_election_timer()
+      else
+        state
+      end
+    end
   end
 
   # -- Handle election timeout -------------------------------------------------
