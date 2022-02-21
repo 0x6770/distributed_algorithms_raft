@@ -122,18 +122,22 @@ defmodule State do
   end
 
   def set_commit_index(state) do
-    histogram = Helper.to_histogram(Map.values(state.next_index))
+    if state.role==:LEADER do
+      histogram = Helper.to_histogram(Map.values(state.next_index))
 
-    commit_index =
-      Enum.reduce(histogram, state.commit_index, fn {index, occurence},
-                                                    commit_index ->
-        case occurence > state.num_servers / 2 and index > commit_index do
-          true -> index
-          false -> commit_index
-        end
-      end)
+      commit_index =
+        Enum.reduce(histogram, state.commit_index, fn {index, occurence},
+                                                      commit_index ->
+          case occurence > state.num_servers / 2 and index > commit_index do
+            true -> index
+            false -> commit_index
+          end
+        end)
 
-    state
-    |> State.commit_index(commit_index)
+      state
+      |> State.commit_index(commit_index)
+    else
+      state
+    end
   end
 end

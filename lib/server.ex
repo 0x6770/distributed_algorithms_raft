@@ -94,6 +94,13 @@ defmodule Server do
           )
       end
 
+    if Log.last_index(s) > 790 and s.role == :LEADER do
+      IO.puts("*******************")
+      IO.puts("last_applied: #{s.last_applied}")
+      IO.puts("commit_index: #{s.commit_index}")
+      Log.print(s.log)
+      IO.puts("*******************")
+    end
     Server.next(s)
   end
 
@@ -136,9 +143,6 @@ defmodule Server do
   end
 
   def execute_committed_entries(s) do
-    s =
-      s
-      |> State.set_commit_index()
 
     case s.last_applied < s.commit_index do
       true ->

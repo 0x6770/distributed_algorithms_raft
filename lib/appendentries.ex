@@ -62,12 +62,14 @@ defmodule AppendEntries do
           # check term, check commit
           case check_commit(s, m) do
             :stale ->
+              #TODO put back the stale detection on server
               s
 
             :merge ->
               s =
                 s
                 |> Log.merge_entries(Message.entries(m))
+                |> State.commit_index(Message.commit_index(m))
 
               reply = Reply.success(s)
 
@@ -107,6 +109,7 @@ defmodule AppendEntries do
                 s
                 |> Log.delete_entries_from(Message.last_index(m) + 1)
                 |> Log.merge_entries(Message.entries(m))
+                |> State.commit_index(Message.commit_index(m))
 
               reply = Reply.success(s)
 
@@ -139,6 +142,7 @@ defmodule AppendEntries do
         s
         |> State.next_index(Reply.follower(m), Reply.request_index(m))
         |> State.match_index(Reply.follower(m), Reply.last_applied(m))
+        |> State.set_commit_index
 
       Reply.committed(m) == false ->
         msg = Message.log_from(s, Reply.request_index(m))

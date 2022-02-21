@@ -48,7 +48,7 @@ defmodule Configuration do
       # max amount moved between accounts in a single transaction
       max_amount: 1_000,
       # clients stops sending requests after this time(ms)
-      client_timelimit: 5_000,
+      client_timelimit: 60_000,
       # maximum no of requests each client will attempt
       max_client_requests: 1,
       # interval(ms) between client requests
