@@ -21,11 +21,14 @@ defmodule ClientReq do
         # add to leader's log
         s =
           s
-          |> Log.append_entry(%{term: s.curr_term, command: client_request})
+          |> Log.append_entry(%{
+            term: s.curr_term,
+            client_request: client_request
+          })
           |> Monitor.send_msg({:CLIENT_REQUEST, s.server_num})
 
         # Create message for send
-        m = Message.initialise(s, cmd)
+        m = Message.initialise(s, client_request)
         # send append entries request to all servers
         for server <- s.servers do
           if server != self() do
@@ -39,7 +42,7 @@ defmodule ClientReq do
       _ ->
         send(
           clientP,
-          {:CLIENT_REPLY, {cid, :NOT_LEADER, s.leaderP}}
+          {:CLIENT_REPLY, {cid, :NOT_LEADER, s.leaderP, s.leaderN}}
         )
 
         s

@@ -85,7 +85,11 @@ defmodule Server do
           |> ClientReq.handle_client_request(msg)
 
         {:DB_REPLY, msg} ->
-          send(msg.clientP, {:CLIENT_REPLY, {msg.cid, :OK, s.leaderP}})
+          send(
+            msg.clientP,
+            {:CLIENT_REPLY, {msg.cid, :OK, s.leaderP, s.leaderN}}
+          )
+
           s
 
         unexpected ->
@@ -94,21 +98,15 @@ defmodule Server do
           )
       end
 
-    if Log.last_index(s) > 790 and s.role == :LEADER do
-      IO.puts("*******************")
-      IO.puts("last_applied: #{s.last_applied}")
-      IO.puts("commit_index: #{s.commit_index}")
-      Log.print(s.log)
-      IO.puts("*******************")
-    end
     Server.next(s)
   end
 
-  def become_follower(s, mterm, leaderP) do
+  def become_follower(s, mterm, leaderP, leaderN) do
     s
     |> Timer.restart_election_timer()
     |> State.role(:FOLLOWER)
     |> State.leaderP(leaderP)
+    |> State.leaderN(leaderN)
     |> Debug.log("I am follower now !")
     |> State.curr_term(mterm)
     |> State.voted_for(nil)
@@ -134,6 +132,7 @@ defmodule Server do
     |> Timer.cancel_election_timer()
     |> State.role(:LEADER)
     |> State.leaderP(self())
+    |> State.leaderN(s.server_num)
     |> Debug.log(
       IO.ANSI.green_background() <>
         IO.ANSI.black() <> "I am leader now !" <> IO.ANSI.reset()
@@ -143,14 +142,13 @@ defmodule Server do
   end
 
   def execute_committed_entries(s) do
-
     case s.last_applied < s.commit_index do
       true ->
         new_entries_range = (s.last_applied + 1)..s.commit_index
         client_requests = Log.get_entries(s, new_entries_range)
 
         for {_index, entry} <- client_requests do
-          send(s.databaseP, {:DB_REQUEST, entry.command})
+          send(s.databaseP, {:DB_REQUEST, entry.client_request})
         end
 
         s |> State.last_applied(s.commit_index)

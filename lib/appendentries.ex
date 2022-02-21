@@ -27,18 +27,32 @@ defmodule AppendEntries do
       s = s |> Timer.restart_election_timer()
 
       if m.entries |> map_size() == 0 do
-        s |> Debug.log("my leader is server #{inspect(m.leaderN)}")
+        s
+        |> Debug.log(
+          "my leader is server #{inspect(m.leaderN)}, #{inspect(m.leaderP)}"
+        )
       end
 
       case s.role do
         :CANDIDATE ->
-          s
+          case s.curr_term <= Message.term(m) do
+            true ->
+              s
+              |> Server.become_follower(m.term, m.leaderP, m.leaderN)
+              |> State.curr_term(m.term)
+              |> State.match_index(Map.new())
+              |> State.next_index(Map.new())
+              |> receive_append_entries_request_from_leader(m)
+
+            false ->
+              s
+          end
 
         :LEADER ->
           case s.curr_term < Message.term(m) do
             true ->
               s
-              |> Server.become_follower(s.term, m.leaderP)
+              |> Server.become_follower(m.term, m.leaderP, m.leaderN)
               |> State.curr_term(m.term)
               |> State.match_index(Map.new())
               |> State.next_index(Map.new())
@@ -62,7 +76,7 @@ defmodule AppendEntries do
           # check term, check commit
           case check_commit(s, m) do
             :stale ->
-              #TODO put back the stale detection on server
+              # TODO put back the stale detection on server
               s
 
             :merge ->
@@ -118,6 +132,8 @@ defmodule AppendEntries do
                 {:APPEND_ENTRIES_REPLY, Reply.term(reply), reply}
               )
 
+              s
+
             :notyet ->
               Helper.node_halt(
                 "************* Append Entries request from leader: unexpected entry}"
@@ -133,7 +149,7 @@ defmodule AppendEntries do
         # Reverts to Follower and waits for instructions from leader
         # Let receive do the repair, so log is unchanged here
         s
-        |> Server.become_follower(m.term, m.follower)
+        |> Server.become_follower(m.term, m.follower, m.followerN)
         |> State.curr_term(Message.term(m))
         |> State.match_index(Map.new())
         |> State.next_index(Map.new())
@@ -142,7 +158,7 @@ defmodule AppendEntries do
         s
         |> State.next_index(Reply.follower(m), Reply.request_index(m))
         |> State.match_index(Reply.follower(m), Reply.last_applied(m))
-        |> State.set_commit_index
+        |> State.set_commit_index()
 
       Reply.committed(m) == false ->
         msg = Message.log_from(s, Reply.request_index(m))
@@ -195,6 +211,4 @@ defmodule AppendEntries do
         :notyet
     end
   end
-
-  # check_commit
 end

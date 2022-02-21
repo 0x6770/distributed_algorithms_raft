@@ -47,7 +47,9 @@ defmodule Log do
       _ ->
         # IO.puts("index  {T,cmd}")
         for {index, entry} <- log do
-          IO.puts("#{index}: {#{entry.term}, #{entry.command}}")
+          IO.puts(
+            "#{inspect(index)}: {#{inspect(entry.term)}, #{inspect(entry.client_request)}}"
+          )
         end
     end
   end

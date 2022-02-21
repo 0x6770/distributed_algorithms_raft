@@ -2,13 +2,18 @@ defmodule Message do
   @doc """
   creates a basic message append entry
   """
-  def initialise(s, command) do
+  def initialise(s, client_request) do
     %{
       leaderP: s.selfP,
       leaderN: s.server_num,
       term: s.curr_term,
       index: Log.last_index(s),
-      entries: %{Log.last_index(s) => %{term: s.curr_term, command: command}},
+      entries: %{
+        Log.last_index(s) => %{
+          term: s.curr_term,
+          client_request: client_request
+        }
+      },
       last_index: Log.last_index(s) - 1,
       last_term: Log.term_at(s, Log.last_index(s) - 1),
       commit_index: s.commit_index

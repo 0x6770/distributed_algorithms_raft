@@ -70,7 +70,7 @@ defmodule Vote do
       state =
         if cTerm > state.curr_term do
           state
-          |> Server.become_follower(cTerm, cId)
+          |> Server.become_follower(cTerm, cId, cN)
         else
           state
         end
@@ -98,7 +98,7 @@ defmodule Vote do
     } = msgIncome
 
     if term > state.curr_term do
-      state |> Server.become_follower(term, followerId)
+      state |> Server.become_follower(term, followerId, followerN)
     else
       if voteGranted and state.role != :LEADER do
         state =

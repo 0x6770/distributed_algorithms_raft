@@ -9,6 +9,7 @@ defmodule Client do
   def request(c, v), do: Map.put(c, :request, v)
   def result(c, v), do: Map.put(c, :result, v)
   def leaderP(c, v), do: Map.put(c, :leaderP, v)
+  def leaderN(c, v), do: Map.put(c, :leaderN, v)
   def servers(c, v), do: Map.put(c, :servers, v)
 
   # ---------- Client.start() --------------------------------------------------
@@ -27,6 +28,7 @@ defmodule Client do
       clientP: self(),
       servers: servers,
       leaderP: nil,
+      leaderN: nil,
       seqnum: 0,
       request: nil,
       result: nil
@@ -105,19 +107,28 @@ defmodule Client do
 
   # ---------- receive_reply_from_leader() -------------------------------------
   def receive_reply_from_leader(c, cid) do
+    IO.puts(
+      IO.ANSI.yellow() <>
+        "client #{c.client_num} => my leader is #{c.leaderN}" <>
+        IO.ANSI.reset()
+    )
+
     receive do
-      {:CLIENT_REPLY, {m_cid, :NOT_LEADER, leaderP}} when m_cid == cid ->
+      {:CLIENT_REPLY, {m_cid, :NOT_LEADER, leaderP, leaderN}}
+      when m_cid == cid ->
         c
         |> Client.leaderP(leaderP)
+        |> Client.leaderN(leaderN)
         |> Client.send_client_request_receive_reply(cid)
 
-      {:CLIENT_REPLY, {m_cid, reply, leaderP}} when m_cid == cid ->
+      {:CLIENT_REPLY, {m_cid, reply, leaderP, leaderN}} when m_cid == cid ->
         c
         |> Client.result(reply)
         |> Client.seqnum(1 + c.seqnum)
         |> Client.leaderP(leaderP)
+        |> Client.leaderN(leaderN)
 
-      {:CLIENT_REPLY, {m_cid, _reply, _leaderP}} when m_cid < cid ->
+      {:CLIENT_REPLY, {m_cid, _reply, _leaderP, _leaderN}} when m_cid < cid ->
         c |> Client.receive_reply_from_leader(cid)
 
       {:CLIENT_TIMELIMIT} ->

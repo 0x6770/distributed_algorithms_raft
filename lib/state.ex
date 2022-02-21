@@ -41,6 +41,7 @@ defmodule State do
       append_entries_timers: Map.new(),
       # included in reply to client request
       leaderP: nil,
+      leaderN: nil,
 
       # ---------- raft paper state variables ----------------------------------
 
@@ -66,6 +67,7 @@ defmodule State do
   # log is implemented in Log module
 
   def leaderP(s, v), do: Map.put(s, :leaderP, v)
+  def leaderN(s, v), do: Map.put(s, :leaderN, v)
   def election_timer(s, v), do: Map.put(s, :election_timer, v)
   def curr_election(s, v), do: Map.put(s, :curr_election, v)
   def inc_election(s), do: Map.put(s, :curr_election, s.curr_election + 1)
@@ -122,7 +124,7 @@ defmodule State do
   end
 
   def set_commit_index(state) do
-    if state.role==:LEADER do
+    if state.role == :LEADER do
       histogram = Helper.to_histogram(Map.values(state.next_index))
 
       commit_index =
