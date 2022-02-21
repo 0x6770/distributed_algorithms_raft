@@ -41,7 +41,7 @@ defmodule Timer do
     append_entries_timer =
       Process.send_after(
         s.selfP,
-        {:APPEND_ENTRIES_TIMEOUT, {s.curr_term, followerP}},
+        {:APPEND_ENTRIES_TIMEOUT, s.curr_term, followerP},
         s.config.append_entries_timeout
       )
 

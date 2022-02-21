@@ -18,7 +18,7 @@ defmodule Client do
       |> Configuration.node_info("Client", client_num)
       |> Debug.node_starting()
 
-    Process.send_after(self(), :CLIENT_TIMELIMIT, config.client_timelimit)
+    Process.send_after(self(), {:CLIENT_TIMELIMIT}, config.client_timelimit)
 
     # initialise client state variables
     c = %{

@@ -29,7 +29,8 @@ defmodule Database do
   def next(d) do
     receive do
       {:DB_REQUEST, client_request} ->
-        {:MOVE, amount, account1, account2} = client_request.cmd
+        IO.puts(inspect(client_request))
+        {:MOVE, amount, account1, account2} = client_request
 
         d = Database.seqnum(d, d.seqnum + 1)
 
@@ -40,7 +41,7 @@ defmodule Database do
         d = Database.balances(d, account2, balance2 - amount)
 
         d
-        |> Monitor.send_msg({:DB_MOVE, d.db_num, d.seqnum, client_request.cmd})
+        |> Monitor.send_msg({:DB_MOVE, d.db_num, d.seqnum, client_request})
         |> Database.send_reply_to_server(:OK)
         |> Database.next()
 
