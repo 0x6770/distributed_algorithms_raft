@@ -15,7 +15,10 @@ defmodule ClientReq do
     case s.role do
       :LEADER ->
         # add to leader's log
-        s = s |> Log.append_entry(%{term: s.curr_term, command: cmd})
+        s =
+          s
+          |> Log.append_entry(%{term: s.curr_term, command: cmd})
+          |> Monitor.send_msg({:CLIENT_REQUEST, s.server_num})
 
         # Create message for send
         m = Message.initialise(s, cmd)

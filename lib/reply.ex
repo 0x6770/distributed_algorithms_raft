@@ -14,7 +14,7 @@ defmodule Reply do
       follower: self(),
       term: s.curr_term,
       committed: false,
-      request_index: Log.last_index(s)+1,
+      request_index: Log.last_index(s) + 1,
       last_applied: s.last_applied
     }
   end
@@ -36,15 +36,14 @@ defmodule Reply do
   def last_applied(m), do: m.follower
 
   def print(m) do
-    IO.puts(
-      "
+    IO.puts("
       follower: #{inspect(follower(m))},
       term: #{term(m)},
       committed: #{committed(m)},
       request_index: #{request_index(m)}
       last_applied: #{last_applied(m)}
-      "
-    )
+      ")
   end
+end
 
-end #end
+# end

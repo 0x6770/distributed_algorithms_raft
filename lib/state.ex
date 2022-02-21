@@ -121,16 +121,19 @@ defmodule State do
     s |> State.match_index(new_match_index)
   end
 
-  def set_commit_index(state)do
+  def set_commit_index(state) do
     histogram = Helper.to_histogram(Map.values(state.next_index))
+
     commit_index =
-      Enum.reduce histogram, state.commit_index, fn {index, occurence},commit_index ->
-        case occurence > state.num_servers/2 and index > commit_index do
+      Enum.reduce(histogram, state.commit_index, fn {index, occurence},
+                                                    commit_index ->
+        case occurence > state.num_servers / 2 and index > commit_index do
           true -> index
           false -> commit_index
         end
-      end
+      end)
+
     state
     |> State.commit_index(commit_index)
-end
+  end
 end

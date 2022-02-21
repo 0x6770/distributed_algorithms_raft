@@ -55,10 +55,11 @@ defmodule Helper do
     raise "Not Implemented"
   end
 
-  def to_histogram(list)do
+  def to_histogram(list) do
     histogram = Map.new()
-    Enum.reduce list,histogram, fn element,acc ->
-      Map.update(acc,element,1,fn count -> count + 1 end)
-    end
+
+    Enum.reduce(list, histogram, fn element, acc ->
+      Map.update(acc, element, 1, fn count -> count + 1 end)
+    end)
   end
 end

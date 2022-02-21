@@ -8,36 +8,48 @@ defmodule Vote do
   @type vote_request :: %{
           term: integer,
           candidateP: pid,
+          # for debugging
+          candidateN: integer,
           lastLogIndex: integer,
           lastLogTerm: integer
         }
-  @type vote_reply :: %{followerP: pid, term: integer, voteGranted: boolean}
+  @type vote_reply :: %{
+          followerId: pid,
+          # for debugging
+          followerN: integer,
+          term: integer,
+          voteGranted: boolean
+        }
 
-  @spec send_vote_reply(pid, integer, boolean) :: nil
-  def send_vote_reply(candidateP, term, voteGranted) do
+  @spec send_vote_reply(map, pid, boolean) :: map
+  def send_vote_reply(state, candidateP, voteGranted) do
     send(
       candidateP,
       {:VOTE_REPLY,
        %{
-         followerP: self(),
-         term: term,
+         followerId: state.selfP,
+         followerN: state.server_num,
+         term: state.curr_term,
          voteGranted: voteGranted
        }}
     )
+
+    state
   end
 
   # -- Handle :VOTE_REQUEST ----------------------------------------------------
-  @spec handle_vote_request(State.state(), vote_request()) :: State.state()
+  @spec handle_vote_request(map, vote_request()) :: map
 
   def handle_vote_request(state, msgIncome) do
     %{
       term: cTerm,
       candidateP: cId,
+      candidateN: cN,
       lastLogIndex: cLastLogIndex,
       lastLogTerm: cLastLogTerm
     } = msgIncome
 
-    Debug.log("receive vote_request from #{inspect(cId)}")
+    state |> Debug.log("receive vote_request from #{inspect(cN)}")
 
     last_term = state |> Log.last_term()
     last_index = state |> Log.last_index()
@@ -48,138 +60,104 @@ defmodule Vote do
 
     # reject the vote request if C.term is less than F.term
     if cTerm < state.curr_term do
-      send_vote_reply(cId, state.curr_term, false)
-      state
+      state |> send_vote_reply(cId, false)
     else
-      # TODO: Handle vote request if have not reached election_time_minimum yet
+      # TODO: Handle vote request if have not reached election_time_minimum yet 
 
       # If C.term is greater than F.term
-      # 1. update F.term
-      # 2. transit to Follower
+      # 1. update F.term 
+      # 2. transit to Follower 
       state =
         if cTerm > state.curr_term do
           state
-          |> State.curr_term(cTerm)
-          |> State.role(:FOLLOWER)
-          |> Timer.restart_election_timer()
+          |> Server.become_follower(cTerm)
         else
           state
         end
 
-      # reject the vote request if candidate is not as least up-to-date as the follower
-      if not isCandidateUpToDate do
-        send_vote_reply(cId, state.curr_term, false)
+      # reject the vote request if candidate is not as least up-to-date as the follower 
+      if isCandidateUpToDate and state.voted_for == nil do
         state
+        |> State.voted_for(cId)
+        |> send_vote_reply(cId, true)
       else
-        case state.voted_for do
-          nil ->
-            state =
-              state
-              |> State.voted_for(cId)
-              |> State.role(:FOLLOWER)
-
-            send_vote_reply(cId, state.curr_term, true)
-            state
-
-          candidate when candidate == cId ->
-            send_vote_reply(cId, state.curr_term, true)
-            state
-
-          _ ->
-            send_vote_reply(cId, state.curr_term, false)
-            state
-        end
+        state |> send_vote_reply(cId, false)
       end
     end
   end
 
   # -- Handle :VOTE_REPLY ----------------------------------------------------
-  @spec handle_vote_reply(State.state(), vote_reply()) :: State.state()
+  @spec handle_vote_reply(map, vote_reply()) :: map
 
   def handle_vote_reply(state, msgIncome) do
-    %{followerP: followerId, voteGranted: voteGranted, term: term} = msgIncome
+    %{
+      followerId: followerId,
+      followerN: followerN,
+      voteGranted: voteGranted,
+      term: term
+    } = msgIncome
 
     if term > state.curr_term do
-      state
-      |> State.curr_term(term)
-      |> State.role(:FOLLOWER)
-      |> Timer.restart_election_timer()
-    end
+      state |> Server.become_follower(term)
+    else
+      if voteGranted and state.role != :LEADER do
+        state =
+          state
+          |> Debug.assert(
+            term == state.curr_term,
+            "#{term} #{state.curr_term}, " <>
+              "follower.curr_term should be the same as candidate.curr_term"
+          )
+          # vote is received from a follower 
+          |> State.add_to_voted_by(followerId)
+          |> Debug.logs(fn s ->
+            IO.ANSI.green() <>
+              "Got vote from #{followerN}, " <>
+              "#{State.vote_tally(s)} out of #{state.majority} to win" <>
+              IO.ANSI.reset()
+          end)
 
-    if voteGranted do
-      state =
-        state
-        |> Debug.assert(
-          term == state.curr_term,
-          "follower.curr_term should be the same as candidate.curr_term"
-        )
-        # vote is received from a follower
-        |> State.add_to_voted_by(followerId)
-
-      IO.puts(
-        IO.ANSI.green() <>
-          "Got #{State.vote_tally(state)} vote." <>
-          "Majority is #{state.majority}" <> IO.ANSI.reset()
-      )
-
-      # Got vote from majority, become leader
-      if(state |> State.vote_tally() >= state.majority) do
-        Debug.log("I'm leader now !")
-
-        # Transit to Leader
-        state = state |> State.role(:LEADER) |> Timer.cancel_election_timer()
-
-        # Send AppendEntries request to all servers
-        for server <- state.servers do
-          state |> Timer.restart_append_entries_timer(server)
-          heartbeat = Message.heartbeat(state)
-          send(server, {:APPEND_ENTRIES_REQUEST,Message.term(heartbeat),heartbeat})
+        # Got vote from majority, become leader
+        if(state |> State.vote_tally() >= state.majority) do
+          state
+          # Transit to Leader
+          |> Server.become_leader()
+          # send heartbest to all peers 
+          |> AppendEntries.send_heartbeat_all()
+        else
+          state
         end
-
-        state
       else
         state
       end
-    else
-      state
     end
   end
 
   # -- Handle election timeout -------------------------------------------------
-  # 1. Increment current term
+  # 1. Increment current term 
   # 2. Transit to Candidate
   # 3. Vote for self
   # 4. Send vote request
   def handle_election_timeout(state) do
-    state =
-      state
-      # 1. Increment current term
-      |> State.inc_term()
-      # 2. Transit to Candidate
-      |> State.role(:CANDIDATE)
-      # 3.1. Create a new ballot box
-      |> State.new_voted_by()
-      # 3.2. Vote for self
-      |> State.add_to_voted_by(state.selfP)
-      |> Timer.restart_election_timer()
-
-    Debug.log("I am candidate now !")
-    # IO.puts("#{System.os_time()} => I am candidate now !")
+    state = state |> Server.become_candidate()
 
     # 4. Send vote request
-    %{selfP: candidateP, curr_term: term} = state
+    %{selfP: candidateP, server_num: candidateN, curr_term: term} = state
     lastLogIndex = Log.last_index(state)
     lastLogTerm = Log.last_term(state)
 
     msg = %{
       term: term,
       candidateP: candidateP,
+      candidateN: candidateN,
       lastLogIndex: lastLogIndex,
       lastLogTerm: lastLogTerm
     }
 
     for server <- state.servers do
-      send(server, {:VOTE_REQUEST, msg})
+      if server != self() do
+        send(server, {:VOTE_REQUEST, msg})
+      end
     end
 
     state

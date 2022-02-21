@@ -108,7 +108,22 @@ defmodule Debug do
   end
 
   # ---------- Debug.log() -----------------------------------------------------
-  def log(msg) do
-    IO.write("#{System.os_time()} => #{msg}\n")
+
+  def log(s, msg) do
+    IO.write(
+      "#{System.os_time(:millisecond)} " <>
+        "server #{s.server_num}:term[#{s.curr_term}] => " <> "#{msg}\n"
+    )
+
+    s
+  end
+
+  def logs(s, msg) do
+    IO.write(
+      "#{System.os_time(:millisecond)} " <>
+        "server #{s.server_num}:term[#{s.curr_term}] => " <> "#{msg.(s)}\n"
+    )
+
+    s
   end
 end
