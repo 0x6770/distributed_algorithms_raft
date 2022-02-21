@@ -51,11 +51,11 @@ defmodule Vote do
       send_vote_reply(cId, state.curr_term, false)
       state
     else
-      # TODO: Handle vote request if have not reached election_time_minimum yet 
+      # TODO: Handle vote request if have not reached election_time_minimum yet
 
       # If C.term is greater than F.term
-      # 1. update F.term 
-      # 2. transit to Follower 
+      # 1. update F.term
+      # 2. transit to Follower
       state =
         if cTerm > state.curr_term do
           state
@@ -66,7 +66,7 @@ defmodule Vote do
           state
         end
 
-      # reject the vote request if candidate is not as least up-to-date as the follower 
+      # reject the vote request if candidate is not as least up-to-date as the follower
       if not isCandidateUpToDate do
         send_vote_reply(cId, state.curr_term, false)
         state
@@ -113,7 +113,7 @@ defmodule Vote do
           term == state.curr_term,
           "follower.curr_term should be the same as candidate.curr_term"
         )
-        # vote is received from a follower 
+        # vote is received from a follower
         |> State.add_to_voted_by(followerId)
 
       IO.puts(
@@ -132,7 +132,8 @@ defmodule Vote do
         # Send AppendEntries request to all servers
         for server <- state.servers do
           state |> Timer.restart_append_entries_timer(server)
-          send(server, {:APPEND_ENTRIES_REQUEST})
+          heartbeat = Message.heartbeat(state)
+          send(server, {:APPEND_ENTRIES_REQUEST,Message.term(heartbeat),heartbeat})
         end
 
         state
@@ -145,7 +146,7 @@ defmodule Vote do
   end
 
   # -- Handle election timeout -------------------------------------------------
-  # 1. Increment current term 
+  # 1. Increment current term
   # 2. Transit to Candidate
   # 3. Vote for self
   # 4. Send vote request

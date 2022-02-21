@@ -20,8 +20,8 @@ defmodule Message do
       term: s.curr_term,
       index: Log.last_index(s),
       entries: %{},
-      last_index: Log.last_index(s)-1,
-      last_term: Log.term_at(s,Log.last_index(s)-1)
+      last_index: 0,
+      last_term: 0
     }
 end #initialise
 
