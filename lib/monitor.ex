@@ -39,7 +39,7 @@ defmodule Monitor do
   def next(m) do
     receive do
       {:DB_MOVE, db, seqnum, command} ->
-        {:MOVE, amount, from, to} = command
+        {:MOVE, amount, from, to} = command.cmd
 
         done = Map.get(m.updates, db, 0)
 

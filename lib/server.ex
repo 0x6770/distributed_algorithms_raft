@@ -85,13 +85,8 @@ defmodule Server do
           |> ClientReq.handle_client_request(msg)
 
         {:DB_REPLY, msg} ->
-          case msg do
-            :OK ->
-              s |> State.last_applied(s.commit_index)
-
-            _ ->
-              s
-          end
+          send(msg.clientP, {:CLIENT_REPLY, {msg.cid, :OK, s.leaderP}})
+          s
 
         unexpected ->
           Helper.node_halt(
@@ -102,10 +97,11 @@ defmodule Server do
     Server.next(s)
   end
 
-  def become_follower(s, mterm) do
+  def become_follower(s, mterm, leaderP) do
     s
     |> Timer.restart_election_timer()
     |> State.role(:FOLLOWER)
+    |> State.leaderP(leaderP)
     |> Debug.log("I am follower now !")
     |> State.curr_term(mterm)
     |> State.voted_for(nil)
@@ -117,6 +113,7 @@ defmodule Server do
     |> State.role(:CANDIDATE)
     |> Debug.log("I am candidate now !")
     |> State.inc_term()
+    |> State.voted_for(s.selfP)
     |> State.new_voted_by()
     |> State.add_to_voted_by(s.selfP)
     |> Debug.logs(fn s ->
@@ -129,6 +126,7 @@ defmodule Server do
     s
     |> Timer.cancel_election_timer()
     |> State.role(:LEADER)
+    |> State.leaderP(self())
     |> Debug.log(
       IO.ANSI.green_background() <>
         IO.ANSI.black() <> "I am leader now !" <> IO.ANSI.reset()

@@ -29,8 +29,8 @@ defmodule Database do
   def next(d) do
     receive do
       {:DB_REQUEST, client_request} ->
-        IO.puts(inspect(client_request))
-        {:MOVE, amount, account1, account2} = client_request
+        IO.puts("DB receive: #{inspect(client_request)}")
+        {:MOVE, amount, account1, account2} = client_request.cmd
 
         d = Database.seqnum(d, d.seqnum + 1)
 
@@ -42,7 +42,7 @@ defmodule Database do
 
         d
         |> Monitor.send_msg({:DB_MOVE, d.db_num, d.seqnum, client_request})
-        |> Database.send_reply_to_server(:OK)
+        |> Database.send_reply_to_server(client_request)
         |> Database.next()
 
       unexpected ->

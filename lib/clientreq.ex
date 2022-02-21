@@ -12,44 +12,37 @@ defmodule ClientReq do
   def handle_client_request(s, client_request) do
     %{clientP: clientP, cid: cid, cmd: cmd} = client_request
 
+    IO.puts(
+      "#{System.os_time(:millisecond)} => CLIENT request : #{inspect(client_request)}"
+    )
+
     case s.role do
       :LEADER ->
         # add to leader's log
         s =
           s
-          |> Log.append_entry(%{term: s.curr_term, command: cmd})
+          |> Log.append_entry(%{term: s.curr_term, command: client_request})
           |> Monitor.send_msg({:CLIENT_REQUEST, s.server_num})
 
         # Create message for send
         m = Message.initialise(s, cmd)
         # send append entries request to all servers
         for server <- s.servers do
-          send(server, {:APPEND_ENTRIES_REQUEST, Message.term(m), m})
+          if server != self() do
+            send(server, {:APPEND_ENTRIES_REQUEST, Message.term(m), m})
+          end
         end
 
         # return state of leader
         s
 
-      :FOLLOWER ->
+      _ ->
         send(
           clientP,
           {:CLIENT_REPLY, {cid, :NOT_LEADER, s.leaderP}}
         )
 
         s
-
-      :CANDIDATE ->
-        send(
-          clientP,
-          {:CLIENT_REPLY, {cid, :NOT_LEADER, s.leaderP}}
-        )
-
-        s
-
-      unexpected ->
-        Helper.node_halt(
-          "************* Client_req: unexpected role of #{inspect(unexpected)}"
-        )
     end
   end
 end

@@ -21,7 +21,7 @@ defmodule AppendEntries do
 
   def receive_append_entries_request_from_leader(s, m) do
     if m.term < s.curr_term do
-      send(m.leaderP, {:APPEND_ENTRIES_REPLY, m.term, Reply.fail(s)})
+      send(m.leaderP, {:APPEND_ENTRIES_REPLY, s.curr_term, Reply.fail(s)})
       s
     else
       s = s |> Timer.restart_election_timer()
@@ -38,7 +38,7 @@ defmodule AppendEntries do
           case s.curr_term < Message.term(m) do
             true ->
               s
-              |> Server.become_follower(s)
+              |> Server.become_follower(s.term, m.leaderP)
               |> State.curr_term(m.term)
               |> State.match_index(Map.new())
               |> State.next_index(Map.new())
@@ -130,11 +130,10 @@ defmodule AppendEntries do
         # Reverts to Follower and waits for instructions from leader
         # Let receive do the repair, so log is unchanged here
         s
-        |> Server.become_follower(s)
+        |> Server.become_follower(m.term, m.follower)
         |> State.curr_term(Message.term(m))
         |> State.match_index(Map.new())
         |> State.next_index(Map.new())
-        |> State.leaderP(m.follower)
 
       Reply.committed(m) == true ->
         s

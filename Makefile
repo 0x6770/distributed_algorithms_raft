@@ -6,7 +6,7 @@
 SERVERS   = 3      	
 CLIENTS   = 3      	
 
-TIMELIMIT = 1500	# quits after milli-seconds(ms)
+TIMELIMIT = 1000	# quits after milli-seconds(ms)
 SETUP     = default	# one of default, slower, faster, etc
 
 # AppendEntries(areq, arep, atim), Vote(vreq, vrep, vall), Election(etim), DB(dreq, drep), Client(creq, crep)
