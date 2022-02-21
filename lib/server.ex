@@ -122,7 +122,21 @@ defmodule Server do
   end
 
   def execute_committed_entries(s) do
-    # Helper.unimplemented(s)
-    s
+    s =
+      s
+      |> State.set_commit_index
+    case s.last_applied < s.commit_index do
+      true ->
+        new_entries_range = (s.last_applied+1)..s.commit_index
+        client_requests = Log.get_entries(s,new_entries_range)
+        for {_index,entry} <- client_requests do
+          send(s.databaseP,{:DB_REQUEST, entry.command})
+        end
+        s
+        |> State.last_applied(s.commit_index)
+      false ->
+        s
+    end
+
   end
 end

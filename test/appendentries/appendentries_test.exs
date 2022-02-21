@@ -34,10 +34,15 @@ defmodule RaftTest.AppendEntries do
   def get_requests(s,range) do
     #Leader forwards by 3
     Enum.reduce(range,s,fn i,s ->
-      s = ClientReq.receive_request_from_client(s,:"cmd#{i}")
+      client_request = %{clientP: nil, cid: nil, cmd: :"cmd#{i}"}
+      s = ClientReq.handle_client_request(s,client_request)
       assert_received({:APPEND_ENTRIES_REQUEST, _term,_message})
       s
     end)
+  end
+
+  def make_request(cmd) do
+    %{clientP: nil, cid: nil, cmd: cmd}
   end
 
   def check_log(s,name) do
@@ -108,7 +113,7 @@ defmodule RaftTest.AppendEntries do
   test "test Message.initialise(s,cmd)" do
     follower = get_state(3,1)
     leader = Server.become_leader(follower)
-    leader = ClientReq.receive_request_from_client(leader,:cmd1)
+    leader = ClientReq.handle_client_request(leader,make_request(:cmd1))
     m = Message.get(leader)
     assert m==
       %{
@@ -121,11 +126,11 @@ defmodule RaftTest.AppendEntries do
       }
   end
 
-  test "test Receive_request_from_client (case leader)" do
+  test "test handle_client_request (case leader)" do
     follower = get_state(3,1)
     leader = Server.become_leader(follower)
     assert leader.curr_term==1
-    leader_after = ClientReq.receive_request_from_client(leader,:cmd1)
+    leader_after = ClientReq.handle_client_request(leader,make_request(:cmd1))
 
     m = Message.initialise(leader_after,:cmd1)
     assert_received({:APPEND_ENTRIES_REQUEST,term, got})
@@ -140,7 +145,7 @@ defmodule RaftTest.AppendEntries do
     leader = Server.become_leader(follower)
     assert leader.curr_term==1
 
-    leader = ClientReq.receive_request_from_client(leader,:cmd1)
+    leader = ClientReq.handle_client_request(leader,make_request(:cmd1))
 
     msg = Message.get(leader)
 
@@ -227,8 +232,11 @@ defmodule RaftTest.AppendEntries do
     # Reply.print(reply)
     leader = AppendEntries.receive_append_entries_reply_from_follower(leader,reply)
     assert leader.next_index[self()]==3
-    # Log.print(leader.log)
-    # Log.print(follower.log)
+    check_log(leader,"leader")
+    check_log(follower,"followerhandle_client_request")
+    for {key,value} <- leader.next_index do
+      IO.puts("#{inspect(key)} => #{value}")
+    end
   end
 
   test "test append with excess entry" do
@@ -330,6 +338,68 @@ defmodule RaftTest.AppendEntries do
     assert Log.last_index(follower)==3
   end
 
+  test "test check_commitiable" do
+    x = [1,1,2,3,4,5,5,5,7]
+    res = %{
+      1=>2,
+      2=>1,
+      3=>1,
+      4=>1,
+      5=>3,
+      7=>1
+    }
+    hist = Helper.to_histogram(x)
+    assert hist == res
+
+    server = get_state(5,1)
+    res = %{
+      1=>2,
+      2=>3,
+      3=>2,
+      4=>2,
+      5=>1
+    }
+    server =
+      server
+      |> Map.put(:num_servers,5)
+      |> State.next_index(res)
+      |> State.set_commit_index
+
+    assert server.commit_index==2
+
+  end
+
+  test "test commit_client_request" do
+    follower = get_state(3,1)
+    leader = Server.become_leader(follower)
+    assert leader.curr_term==1
+
+    indices =
+      %{
+        1=>2,
+        2=>3,
+        3=>2,
+        4=>2,
+        5=>1
+      }
+    #Leader forwards by 3
+    leader = get_requests(leader,1..3)
+    assert leader.commit_index==0
+    leader =
+      leader
+      |> Map.put(:num_servers,5)
+      |> State.next_index(indices)
+    assert leader.commit_index==0
+    leader =
+      leader
+      |> Server.execute_committed_entries
+    assert leader.commit_index==2
+    assert leader.last_applied==leader.commit_index
+    assert_received({:DB_REQUEST, client_request1})
+    assert_received({:DB_REQUEST, client_request2})
+    assert client_request1==:cmd1
+    assert client_request2==:cmd2
+  end
   # test "test send entry reply to old leader"do
   #   {follower,leader} = term1_Case()
 

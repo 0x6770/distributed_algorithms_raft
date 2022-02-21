@@ -14,7 +14,7 @@ defmodule Message do
 
   end #initialise
 
-  def heartbeat(s,command) do
+  def heartbeat(s) do
     %{
       leaderP: self(),
       term: s.curr_term,
@@ -23,7 +23,6 @@ defmodule Message do
       last_index: Log.last_index(s)-1,
       last_term: Log.term_at(s,Log.last_index(s)-1)
     }
-
 end #initialise
 
   def log_from(s,index) do

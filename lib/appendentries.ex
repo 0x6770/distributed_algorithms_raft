@@ -92,6 +92,7 @@ defmodule AppendEntries do
       Reply.committed(m)==true ->
         s
         |> State.next_index(Reply.follower(m),Reply.request_index(m))
+        |> State.match_index(Reply.follower(m),Reply.last_applied(m))
       Reply.committed(m)==false ->
         msg = Message.log_from(s,Reply.request_index(m))
         send(Reply.follower(m),{:APPEND_ENTRIES_REQUEST,Message.term(msg),msg})
@@ -102,6 +103,7 @@ defmodule AppendEntries do
   def receive_append_entries_timeout(s, followerP) do
     Helper.unimplemented([s, followerP])
   end
+
 
   defp check_valid(s,m)do
     Log.term_at(s,Log.last_index(s))==Message.last_term(m)

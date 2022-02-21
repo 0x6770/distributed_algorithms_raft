@@ -4,7 +4,8 @@ defmodule Reply do
       follower: self(),
       term: s.curr_term,
       committed: true,
-      request_index: Log.last_index(s)
+      request_index: Log.last_index(s),
+      last_applied: s.last_applied
     }
   end
 
@@ -13,7 +14,8 @@ defmodule Reply do
       follower: self(),
       term: s.curr_term,
       committed: false,
-      request_index: Log.last_index(s)+1
+      request_index: Log.last_index(s)+1,
+      last_applied: s.last_applied
     }
   end
 
@@ -22,7 +24,8 @@ defmodule Reply do
       follower: s.leaderP,
       term: s.curr_term,
       committed: false,
-      request_index: nil
+      request_index: nil,
+      last_applied: nil
     }
   end
 
@@ -30,6 +33,7 @@ defmodule Reply do
   def committed(m), do: m.committed
   def request_index(m), do: m.request_index
   def follower(m), do: m.follower
+  def last_applied(m), do: m.follower
 
   def print(m) do
     IO.puts(
@@ -38,6 +42,7 @@ defmodule Reply do
       term: #{term(m)},
       committed: #{committed(m)},
       request_index: #{request_index(m)}
+      last_applied: #{last_applied(m)}
       "
     )
   end
