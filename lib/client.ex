@@ -114,6 +114,7 @@ defmodule Client do
       {:CLIENT_REPLY, {m_cid, reply, leaderP}} when m_cid == cid ->
         c
         |> Client.result(reply)
+        |> Client.seqnum(1 + c.seqnum)
         |> Client.leaderP(leaderP)
 
       {:CLIENT_REPLY, {m_cid, _reply, _leaderP}} when m_cid < cid ->
