@@ -57,7 +57,8 @@ defmodule VoteTest.HandleVoteRequest do
     # msg: term, candidateId, lastLogIndex, lastLogTerm
     msg = %{
       term: cCurrentTerm,
-      candidateP: self(),
+      candidateId: self(),
+      candidateN: 0,
       lastLogIndex: cLastLogIndex,
       lastLogTerm: cLastLogTerm
     }
@@ -65,7 +66,10 @@ defmodule VoteTest.HandleVoteRequest do
     fState = Vote.handle_vote_request(fState, msg)
 
     assert_received {:VOTE_REPLY, reply}
-    %{followerP: _pid, term: term, voteGranted: voteGranted} = reply
+
+    %{followerId: _pid, followerN: _, term: term, voteGranted: voteGranted} =
+      reply
+
     assert fState.role == :FOLLOWER
     # check if the follower has voted as expected
     assert voteGranted == expect,

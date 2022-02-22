@@ -31,7 +31,13 @@ defmodule VoteTest do
 
     assert_received {:VOTE_REQUEST, msg}
 
-    {term, candidateId, lastLogIndex, lastLogTerm} = msg
+    %{
+      term: term,
+      candidateId: candidateId,
+      candidateN: _candidateN,
+      lastLogIndex: lastLogIndex,
+      lastLogTerm: lastLogTerm
+    } = msg
 
     assert term == 1 + state.curr_term
     assert candidateId == self()

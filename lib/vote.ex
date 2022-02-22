@@ -7,7 +7,7 @@ defmodule Vote do
 
   @type vote_request :: %{
           term: integer,
-          candidateP: pid,
+          candidateId: pid,
           # for debugging
           candidateN: integer,
           lastLogIndex: integer,
@@ -22,9 +22,9 @@ defmodule Vote do
         }
 
   @spec send_vote_reply(map, pid, boolean) :: map
-  def send_vote_reply(state, candidateP, voteGranted) do
+  def send_vote_reply(state, candidateId, voteGranted) do
     send(
-      candidateP,
+      candidateId,
       {:VOTE_REPLY,
        %{
          followerId: state.selfP,
@@ -43,7 +43,7 @@ defmodule Vote do
   def handle_vote_request(state, msgIncome) do
     %{
       term: cTerm,
-      candidateP: cId,
+      candidateId: cId,
       candidateN: cN,
       lastLogIndex: cLastLogIndex,
       lastLogTerm: cLastLogTerm
@@ -142,13 +142,13 @@ defmodule Vote do
     state = state |> Server.become_candidate()
 
     # 4. Send vote request
-    %{selfP: candidateP, server_num: candidateN, curr_term: term} = state
+    %{selfP: candidateId, server_num: candidateN, curr_term: term} = state
     lastLogIndex = Log.last_index(state)
     lastLogTerm = Log.last_term(state)
 
     msg = %{
       term: term,
-      candidateP: candidateP,
+      candidateId: candidateId,
       candidateN: candidateN,
       lastLogIndex: lastLogIndex,
       lastLogTerm: lastLogTerm

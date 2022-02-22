@@ -50,11 +50,17 @@ defmodule VoteTest.HandleVoteReply do
     cState = setup_state(candidate, config)
 
     # msg: followerId, voteGranted, follower.curr_term
-    msg = %{followerP: self(), voteGranted: voteGranted, term: term}
+    msg = %{
+      followerId: self(),
+      followerN: 0,
+      voteGranted: voteGranted,
+      term: term
+    }
+
     Vote.handle_vote_reply(cState, msg)
 
     if voteGranted do
-      assert_received :APPEND_ENTRIES_REQUEST
+      assert_received {:APPEND_ENTRIES_REQUEST, _, _}
     end
   end
 
