@@ -1,29 +1,48 @@
 # Raft
 
 ## Getting Started
+
 ### Install dependencies
+
 Before you do anything...
-run "mix deps.get"
+run
+
+```bash
+mix deps.get
+```
 
 ## Branch Structure
-We have created different branches for you to play around with different tests and condigurations
+
+We have created different branches for you to play around with different tests and configurations
 instructions on how perform the tests are documented in this section
 
 ### main
-This branch is used to demonstrate that when give sufficient time, client requests will eventually be replicated on each server. 
+
+This branch is used to demonstrate that when give sufficient time, client requests will eventually be replicated on each server.
 To perform this test
-run "make"
+
+```bash
+git checkout main
+make
+```
+
+You can optionally use "verify_databases.sh" after main program shutting down to verify consistency of databases.
 
 ### appendEntryTest
-This branch is used to domonstrate the appendEntryTest mentioned in the report.
+
+This branch is used to demonstrate the appendEntryTest mentioned in the report.
 To perform this test
-run "bash test_appendEntry.sh"
 
-### leader-electrion-only
+```bash
+git checkout appendEntryTest
+bash test_appendEntry.sh
+```
 
+### leader-election-only
 
+This branch is used to demonstrate the leader-election process. Servers are intensionally put to sleep so that leadership competition is more aggressive.
 
-
-
-
-
+```bash
+git checkout leader-election-only
+make
+```

@@ -50,7 +50,7 @@ defmodule Configuration do
       # clients stops sending requests after this time(ms)
       client_timelimit: 60_000,
       # maximum no of requests each client will attempt
-      max_client_requests: 300,
+      max_client_requests: 100,
       # interval(ms) between client requests
       client_request_interval: 1,
       # timeout(ms) for the reply to a client request
