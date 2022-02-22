@@ -128,9 +128,10 @@ defmodule State do
       histogram = Helper.to_histogram(Map.values(state.next_index))
 
       commit_index =
-        Enum.reduce(histogram, state.commit_index, fn {index, occurence},
+        Enum.reduce(histogram, state.commit_index, fn {index, occurrence},
                                                       commit_index ->
-          case occurence > state.num_servers / 2 and index > commit_index do
+          case occurrence > state.num_servers / 2 and index > commit_index and
+                 Log.term_at(state, index) == state.curr_term do
             true -> index
             false -> commit_index
           end

@@ -107,11 +107,13 @@ defmodule Client do
 
   # ---------- receive_reply_from_leader() -------------------------------------
   def receive_reply_from_leader(c, cid) do
-    IO.puts(
-      IO.ANSI.yellow() <>
-        "client #{c.client_num} => my leader is #{c.leaderN}" <>
-        IO.ANSI.reset()
-    )
+    if Debug.option?(c.config, "R", 3) do
+      IO.puts(
+        IO.ANSI.yellow() <>
+          "client #{c.client_num} => my leader is #{c.leaderN}" <>
+          IO.ANSI.reset()
+      )
+    end
 
     receive do
       {:CLIENT_REPLY, {m_cid, :NOT_LEADER, leaderP, leaderN}}
@@ -124,7 +126,6 @@ defmodule Client do
       {:CLIENT_REPLY, {m_cid, reply, leaderP, leaderN}} when m_cid == cid ->
         c
         |> Client.result(reply)
-        |> Client.seqnum(1 + c.seqnum)
         |> Client.leaderP(leaderP)
         |> Client.leaderN(leaderN)
 

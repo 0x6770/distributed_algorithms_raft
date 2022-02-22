@@ -98,6 +98,10 @@ defmodule Server do
           )
       end
 
+    # if Enum.random(1..20000) == 12345 and s.role != :LEADER do
+    #   Helper.node_nap(200, "")
+    # end
+
     Server.next(s)
   end
 

@@ -9,12 +9,14 @@ defmodule ClientReq do
   @type client_request :: %{clientP: pid, cid: cid, cmd: cmd}
 
   @spec handle_client_request(map, client_request) :: map
-  def handle_client_request(s, client_request) do
+  def handle_client_request(s, client_request, level \\ 3) do
     %{clientP: clientP, cid: cid, cmd: cmd} = client_request
 
-    IO.puts(
-      "#{System.os_time(:millisecond)} => CLIENT request : #{inspect(client_request)}"
-    )
+    if Debug.option?(s.config, "R", level) do
+      IO.puts(
+        "#{System.os_time(:millisecond)} => CLIENT request : #{inspect(client_request)}"
+      )
+    end
 
     case s.role do
       :LEADER ->

@@ -16,28 +16,13 @@ defmodule Database do
         _ -> "{}"
       end
 
-    IO.puts("Content => #{inspect(content)}")
-
     {:ok, json_balances} = JSON.decode(content)
 
     balances = Map.put(json_balances, to_string(i), v)
 
-    IO.puts(
-      IO.ANSI.cyan() <> "#{inspect(JSON.encode(balances))}" <> IO.ANSI.reset()
-    )
-
     {:ok, json} = JSON.encode(balances)
     File.write(d.file_name, json, [:write])
     d
-  end
-
-  def write(d) do
-    {:ok, json} = JSON.encode(d.balances)
-    File.write(d.file_name, json, [:write])
-
-    IO.puts(
-      IO.ANSI.cyan() <> "#{inspect(JSON.encode(d.balances))}" <> IO.ANSI.reset()
-    )
   end
 
   def erase(d) do
@@ -69,7 +54,6 @@ defmodule Database do
   def next(d) do
     receive do
       {:DB_REQUEST, client_request} ->
-        IO.puts("DB receive: #{inspect(client_request)}")
         {:MOVE, amount, account1, account2} = client_request.cmd
 
         d = Database.seqnum(d, d.seqnum + 1)

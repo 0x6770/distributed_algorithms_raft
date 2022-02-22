@@ -42,6 +42,11 @@ defmodule Helper do
     node_exit()
   end
 
+  def node_nap(timeout, message) do
+    IO.puts("Node #{node()} Going to Sleep for #{timeout} ms - #{message}")
+    Process.sleep(timeout)
+  end
+
   def node_sleep(message) do
     IO.puts("Node #{node()} Going to Sleep - #{message}")
     Process.sleep(:infinity)

@@ -3,18 +3,18 @@
 # coursework, raft 
 # Makefile, v1
 
-SERVERS   = 5      	
+SERVERS   = 5     	
 CLIENTS   = 5      	
 
-TIMELIMIT = 4000	# quits after milli-seconds(ms)
+TIMELIMIT = 15000	# quits after milli-seconds(ms)
 SETUP     = default	# one of default, slower, faster, etc
 
 # AppendEntries(areq, arep, atim), Vote(vreq, vrep, vall), Election(etim), DB(dreq, drep), Client(creq, crep)
 # Prefixes + for send/send_after,  - for receive
 DEBUG_OPTIONS = "+areq -areq +arep -arep +vreq +vall -vreq +vrep -vrep +atim -atim +etim -etim +dreq -dreq +drep -drep -creq -crep"
-DEBUG_OPTIONS = "none"
+DEBUG_OPTIONS = "-creq -crep"
 
-DEBUG_LEVEL   = 2
+DEBUG_LEVEL   = 0
 
 START     = Raft.start
 HOST	 := 127.0.0.1
@@ -49,6 +49,7 @@ run cluster: compile
 	@ ${ELIXIR} client5_${NODE_SUFFIX} ${MIX} cluster_wait &
 	@sleep 1
 	@ ${ELIXIR} raft_${NODE_SUFFIX} ${MIX} cluster_start
+	@bash verify_databases.sh
 
 compile:
 	mix compile
@@ -60,6 +61,9 @@ test:
 clean:
 	mix clean
 	@rm -f erl_crash.dump
+
+verify: 
+	@bash verify_databases.sh
 
 ps:
 	@echo ------------------------------------------------------------
