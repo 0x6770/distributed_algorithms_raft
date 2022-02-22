@@ -3,10 +3,10 @@
 # coursework, raft 
 # Makefile, v1
 
-SERVERS   = 3      	
-CLIENTS   = 3      	
+SERVERS   = 5      	
+CLIENTS   = 5      	
 
-TIMELIMIT = 1500	# quits after milli-seconds(ms)
+TIMELIMIT = 4000	# quits after milli-seconds(ms)
 SETUP     = default	# one of default, slower, faster, etc
 
 # AppendEntries(areq, arep, atim), Vote(vreq, vrep, vall), Election(etim), DB(dreq, drep), Client(creq, crep)

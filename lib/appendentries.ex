@@ -39,9 +39,6 @@ defmodule AppendEntries do
             true ->
               s
               |> Server.become_follower(m.term, m.leaderP, m.leaderN)
-              |> State.curr_term(m.term)
-              |> State.match_index(Map.new())
-              |> State.next_index(Map.new())
               |> receive_append_entries_request_from_leader(m)
 
             false ->
@@ -53,9 +50,6 @@ defmodule AppendEntries do
             true ->
               s
               |> Server.become_follower(m.term, m.leaderP, m.leaderN)
-              |> State.curr_term(m.term)
-              |> State.match_index(Map.new())
-              |> State.next_index(Map.new())
               |> receive_append_entries_request_from_leader(m)
 
             false ->

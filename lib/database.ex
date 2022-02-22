@@ -6,7 +6,44 @@ defmodule Database do
 
   # ---------- Database setters() ----------------------------------------------
   def seqnum(d, v), do: Map.put(d, :seqnum, v)
-  def balances(d, i, v), do: Map.put(d, :balances, Map.put(d.balances, i, v))
+  # def balances(d, i, v), do: Map.put(d, :balances, Map.put(d.balances, i, v))
+
+  def balances(d, i, v) do
+    content =
+      case File.read(d.file_name) do
+        {:ok, ""} -> "{}"
+        {:ok, content} -> content
+        _ -> "{}"
+      end
+
+    IO.puts("Content => #{inspect(content)}")
+
+    {:ok, json_balances} = JSON.decode(content)
+
+    balances = Map.put(json_balances, to_string(i), v)
+
+    IO.puts(
+      IO.ANSI.cyan() <> "#{inspect(JSON.encode(balances))}" <> IO.ANSI.reset()
+    )
+
+    {:ok, json} = JSON.encode(balances)
+    File.write(d.file_name, json, [:write])
+    d
+  end
+
+  def write(d) do
+    {:ok, json} = JSON.encode(d.balances)
+    File.write(d.file_name, json, [:write])
+
+    IO.puts(
+      IO.ANSI.cyan() <> "#{inspect(JSON.encode(d.balances))}" <> IO.ANSI.reset()
+    )
+  end
+
+  def erase(d) do
+    File.rm(d.file_name)
+    d
+  end
 
   # ---------- Database.start() ------------------------------------------------
   def start(config, db_num) do
@@ -15,13 +52,16 @@ defmodule Database do
         # initialise database state variables
         d = %{
           config: config,
+          file_name: "./database/db_#{db_num}.json",
           db_num: db_num,
           serverP: serverP,
           seqnum: 0,
           balances: Map.new()
         }
 
-        Database.next(d)
+        d
+        |> Database.erase()
+        |> Database.next()
     end
   end
 

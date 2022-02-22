@@ -50,9 +50,9 @@ defmodule Configuration do
       # clients stops sending requests after this time(ms)
       client_timelimit: 60_000,
       # maximum no of requests each client will attempt
-      max_client_requests: 1,
+      max_client_requests: 150,
       # interval(ms) between client requests
-      client_request_interval: 10,
+      client_request_interval: 5,
       # timeout(ms) for the reply to a client request
       client_reply_timeout: 50,
       # timeout(ms) for election, set randomly in range

@@ -154,10 +154,8 @@ defmodule Vote do
       lastLogTerm: lastLogTerm
     }
 
-    for server <- state.servers do
-      if server != self() do
-        send(server, {:VOTE_REQUEST, msg})
-      end
+    for server <- state.servers, server != self() do
+      send(server, {:VOTE_REQUEST, msg})
     end
 
     state
