@@ -12,7 +12,9 @@ defmodule RaftTest.AppendEntries do
       "#{server_num}",
       "#{client_num}",
       "default",
-      "cluster_wait"
+      "cluster_wait",
+      self(),
+      100..200,
     ]
 
     config = %{
@@ -23,7 +25,9 @@ defmodule RaftTest.AppendEntries do
       n_servers: String.to_integer(Enum.at(argv, 4)),
       n_clients: String.to_integer(Enum.at(argv, 5)),
       setup: :"#{Enum.at(argv, 6)}",
-      start_function: :"#{Enum.at(argv, 7)}"
+      start_function: :"#{Enum.at(argv, 7)}",
+      monitorP: Enum.at(argv, 8),
+      election_timeout_range: Enum.at(argv, 9)
     }
 
     config |> Map.merge(Configuration.params(config.setup))
@@ -36,6 +40,7 @@ defmodule RaftTest.AppendEntries do
     Enum.reduce(range, s, fn i, s ->
       client_request = %{clientP: nil, cid: nil, cmd: :"cmd#{i}"}
       s = ClientReq.handle_client_request(s, client_request)
+      assert_received({:CLIENT_REQUEST, 0})
       assert_received({:APPEND_ENTRIES_REQUEST, _term, _message})
       s
     end)
@@ -113,32 +118,37 @@ defmodule RaftTest.AppendEntries do
 
   # ***************** Test Starts here **************************
   test "test Become Leader" do
-    s = get_state(3, 1)
-    s = Server.become_leader(s)
+    follower = get_state(3, 1)
+    candidate = Server.become_candidate(follower)
+    leader = Server.become_leader(candidate)
 
-    assert s.role == :LEADER
-    assert s.curr_term == 1
+    assert leader.role == :LEADER
+    assert leader.curr_term == 1
   end
 
   test "test Message.initialise(s,cmd)" do
     follower = get_state(3, 1)
-    leader = Server.become_leader(follower)
+    candidate = Server.become_candidate(follower)
+    leader = Server.become_leader(candidate)
     leader = ClientReq.handle_client_request(leader, make_request(:cmd1))
     m = Message.get(leader)
 
     assert m ==
-             %{
-               leaderP: self(),
-               term: 1,
-               index: 1,
-               entries: %{1 => %{term: 1, command: :cmd1}},
-               last_index: 0,
-               last_term: 0
-             }
+     %{
+      entries: %{1 => %{term: 0, client_request: %{cid: nil, clientP: nil, cmd: :cmd1}}},
+      index: 1,
+      last_index: 0,
+      last_term: 0,
+      leaderP: self(),
+      term: 1,
+      leaderN: 0
+      }
+
   end
 
   test "test handle_client_request (case leader)" do
     follower = get_state(3, 1)
+    candidate = Server.become_candidate(follower)
     leader = Server.become_leader(follower)
     assert leader.curr_term == 1
     leader_after = ClientReq.handle_client_request(leader, make_request(:cmd1))
@@ -153,7 +163,8 @@ defmodule RaftTest.AppendEntries do
 
   test "test receive_append, basic" do
     follower = get_state(3, 1)
-    leader = Server.become_leader(follower)
+    candidate = Server.become_candidate(follower)
+    leader = Server.become_leader(candidate)
     assert leader.curr_term == 1
 
     leader = ClientReq.handle_client_request(leader, make_request(:cmd1))
@@ -184,7 +195,8 @@ defmodule RaftTest.AppendEntries do
 
   test "test append follower, stale request" do
     follower = get_state(3, 1)
-    leader = Server.become_leader(follower)
+    candidate = Server.become_candidate(follower)
+    leader = Server.become_leader(candidate)
     assert leader.curr_term == 1
 
     # TO BE DONE
@@ -192,7 +204,8 @@ defmodule RaftTest.AppendEntries do
 
   test "test append follower, reply fail and request" do
     follower = get_state(3, 1)
-    leader = Server.become_leader(follower)
+    candidate = Server.become_candidate(follower)
+    leader = Server.become_leader(candidate)
     assert leader.curr_term == 1
 
     leader = get_requests(leader, 1..3)
@@ -208,9 +221,10 @@ defmodule RaftTest.AppendEntries do
     assert reply == failed
   end
 
-  test "test append follower, append multiple" do
+  test "test append follower, :request + :merge" do
     follower = get_state(3, 1)
-    leader = Server.become_leader(follower)
+    candidate = Server.become_candidate(follower)
+    leader = Server.become_leader(candidate)
     assert leader.curr_term == 1
 
     # Leader forwards by 3
@@ -268,10 +282,11 @@ defmodule RaftTest.AppendEntries do
     end
   end
 
-  test "test append with excess entry" do
+  test "test :pop append with excess entry" do
     # ****************** same as before**************
     follower = get_state(3, 1)
-    leader = Server.become_leader(follower)
+    candidate = Server.become_candidate(follower)
+    leader = Server.become_leader(candidate)
     assert leader.curr_term == 1
 
     leader = get_requests(leader, 1..3)
@@ -407,7 +422,15 @@ defmodule RaftTest.AppendEntries do
     assert hist == res
 
     server = get_state(5, 1)
-
+    server = Server.become_leader(server)
+    log =
+    %{
+      1 => %{term: 1, req: :cmd1},
+      2 => %{term: 1, req: :cmd2},
+      3 => %{term: 1, req: :cmd3},
+      4 => %{term: 1, req: :cmd4},
+      5 => %{term: 1, req: :cmd5}
+    }
     res = %{
       1 => 2,
       2 => 3,
@@ -427,7 +450,8 @@ defmodule RaftTest.AppendEntries do
 
   test "test commit_client_request" do
     follower = get_state(3, 1)
-    leader = Server.become_leader(follower)
+    candidate = Server.become_candidate(follower)
+    leader = Server.become_leader(candidate)
     assert leader.curr_term == 1
 
     indices = %{
