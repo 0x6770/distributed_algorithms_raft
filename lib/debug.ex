@@ -109,20 +109,24 @@ defmodule Debug do
 
   # ---------- Debug.log() -----------------------------------------------------
 
-  def log(s, msg) do
-    IO.write(
-      "#{System.os_time(:millisecond)} " <>
-        "server #{s.server_num}:term[#{s.curr_term}] => " <> "#{msg}\n"
-    )
+  def log(s, msg, level \\ 3) do
+    if Debug.option?(s.config, "R", level) do
+      IO.write(
+        "#{inspect(DateTime.utc_now())} " <>
+          "server #{s.server_num}:term[#{s.curr_term}] => " <> "#{msg}\n"
+      )
+    end
 
     s
   end
 
-  def logs(s, msg) do
-    IO.write(
-      "#{System.os_time(:millisecond)} " <>
-        "server #{s.server_num}:term[#{s.curr_term}] => " <> "#{msg.(s)}\n"
-    )
+  def logs(s, msg, level \\ 3) do
+    if Debug.option?(s.config, "R", level) do
+      IO.write(
+        "#{inspect(DateTime.utc_now())} " <>
+          "server #{s.server_num}:term[#{s.curr_term}] => " <> "#{msg.(s)}\n"
+      )
+    end
 
     s
   end

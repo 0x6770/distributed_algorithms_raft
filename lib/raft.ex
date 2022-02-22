@@ -4,6 +4,7 @@
 defmodule Raft do
   # ---------- Raft.start/0 ----------------------------------------------------
   def start do
+    File.rm_rf("database/db*")
     config = Configuration.node_init(System.argv())
     Raft.start(config, config.start_function)
   end
