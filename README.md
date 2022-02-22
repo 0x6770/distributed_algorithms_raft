@@ -11,6 +11,12 @@ run
 mix deps.get
 ```
 
+## Debugging
+
+Debugging options are listed in `Makefile`. To use debugging option, add them to `DEBUG_OPTION` variable in `Makefile:15`
+
+Debugging level by default is 0, can also be adjusted in `Makefile:17`.
+
 ## Branch Structure
 
 We have created different branches for you to play around with different tests and configurations
