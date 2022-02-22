@@ -1,40 +1,29 @@
 # Raft
 
-**TODO: Add description**
+## Getting Started
+### Install dependencies
+Before you do anything...
+run "mix deps.get"
 
-## Ideas
+## Branch Structure
+We have created different branches for you to play around with different tests and condigurations
+instructions on how perform the tests are documented in this section
 
-use SVG to visualise communication among processes? Time as Y axis, different colors for different roles.
+### main
+This branch is used to demonstrate that when give sufficient time, client requests will eventually be replicated on each server. 
+To perform this test
+run "make"
 
-```
-1--2--3--4--5
-|  |  |--+->|
-|->|  |<-+--|
-|<-|  |  |  |
-|  |  |  |  |
-|  |  |  |  |
-|  |  |  |  |
-|  |  |  |  |
-```
+### appendEntryTest
+This branch is used to domonstrate the appendEntryTest mentioned in the report.
+To perform this test
+run "bash test_appendEntry.sh"
 
-## Installation
+### leader-electrion-only
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `raft` to your list of dependencies in `mix.exs`:
 
-## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `raft` to your list of dependencies in `mix.exs`:
 
-```elixir
-def deps do
-  [
-    {:raft, "~> 0.1.0"}
-  ]
-end
-```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/raft>.
+
+
