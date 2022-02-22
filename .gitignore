@@ -26,3 +26,4 @@ raft-*.tar
 /tmp/
 
 *output*
+mix.lock
