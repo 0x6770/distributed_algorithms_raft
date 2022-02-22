@@ -14,7 +14,7 @@ defmodule Vote do
           lastLogTerm: integer
         }
   @type vote_reply :: %{
-          followerId: pid,
+          followerP: pid,
           # for debugging
           followerN: integer,
           term: integer,
@@ -27,7 +27,7 @@ defmodule Vote do
       candidateP,
       {:VOTE_REPLY,
        %{
-         followerId: state.selfP,
+         followerP: state.selfP,
          followerN: state.server_num,
          term: state.curr_term,
          voteGranted: voteGranted
@@ -91,14 +91,14 @@ defmodule Vote do
 
   def handle_vote_reply(state, msgIncome) do
     %{
-      followerId: followerId,
+      followerP: followerP,
       followerN: followerN,
       voteGranted: voteGranted,
       term: term
     } = msgIncome
 
     if term > state.curr_term do
-      state |> Server.become_follower(term, followerId, followerN)
+      state |> Server.become_follower(term, followerP, followerN)
     else
       if voteGranted and state.role != :LEADER do
         state =
@@ -109,7 +109,7 @@ defmodule Vote do
               "follower.curr_term should be the same as candidate.curr_term"
           )
           # vote is received from a follower 
-          |> State.add_to_voted_by(followerId)
+          |> State.add_to_voted_by(followerP)
           |> Debug.logs(fn s ->
             IO.ANSI.green() <>
               "Got vote from #{followerN}, " <>

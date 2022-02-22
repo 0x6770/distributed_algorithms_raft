@@ -49,7 +49,6 @@ run cluster: compile
 	@ ${ELIXIR} client5_${NODE_SUFFIX} ${MIX} cluster_wait &
 	@sleep 1
 	@ ${ELIXIR} raft_${NODE_SUFFIX} ${MIX} cluster_start
-	@bash verify_databases.sh
 
 compile:
 	mix compile

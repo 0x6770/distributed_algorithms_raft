@@ -26,12 +26,10 @@ defmodule AppendEntries do
     else
       s = s |> Timer.restart_election_timer()
 
-      if m.entries |> map_size() == 0 do
-        s
-        |> Debug.log(
-          "my leader is server #{inspect(m.leaderN)}, #{inspect(m.leaderP)}"
-        )
-      end
+      # if m.entries |> map_size() == 0 do
+      #   s
+      #   |> Debug.log("my leader is server #{inspect(m.leaderN)}")
+      # end
 
       case s.role do
         :CANDIDATE ->
@@ -57,81 +55,12 @@ defmodule AppendEntries do
           end
 
         :FOLLOWER ->
-          # catch up with current term, else remain same
-          s =
-            cond do
-              s.curr_term < Message.term(m) ->
-                s |> State.curr_term(Message.term(m))
+          cond do
+            s.curr_term < Message.term(m) ->
+              s |> State.curr_term(Message.term(m))
 
-              s.curr_term >= Message.term(m) ->
-                s
-            end
-
-          # check term, check commit
-          case check_commit(s, m) do
-            :stale ->
-              # TODO put back the stale detection on server
+            s.curr_term >= Message.term(m) ->
               s
-
-            :merge ->
-              s =
-                s
-                |> Log.merge_entries(Message.entries(m))
-                |> State.commit_index(Message.commit_index(m))
-
-              reply = Reply.success(s)
-
-              send(
-                Message.leaderP(m),
-                {:APPEND_ENTRIES_REPLY, Reply.term(reply), reply}
-              )
-
-              s
-
-            :request ->
-              reply = Reply.fail(s)
-
-              send(
-                Message.leaderP(m),
-                {:APPEND_ENTRIES_REPLY, Reply.term(reply), reply}
-              )
-
-              s
-
-            :pop ->
-              s =
-                s
-                |> Log.delete_entries_from(Message.last_index(m))
-
-              reply = Reply.fail(s)
-
-              send(
-                Message.leaderP(m),
-                {:APPEND_ENTRIES_REPLY, Reply.term(reply), reply}
-              )
-
-              s
-
-            :repair ->
-              s =
-                s
-                |> Log.delete_entries_from(Message.last_index(m) + 1)
-                |> Log.merge_entries(Message.entries(m))
-                |> State.commit_index(Message.commit_index(m))
-
-              reply = Reply.success(s)
-
-              send(
-                Message.leaderP(m),
-                {:APPEND_ENTRIES_REPLY, Reply.term(reply), reply}
-              )
-
-              s
-
-            :notyet ->
-              Helper.node_halt(
-                "************* Append Entries request from leader: unexpected entry}"
-              )
           end
       end
     end
@@ -173,36 +102,5 @@ defmodule AppendEntries do
     )
 
     s |> Timer.restart_append_entries_timer(followerP)
-  end
-
-  defp check_valid(s, m) do
-    Log.term_at(s, Log.last_index(s)) == Message.last_term(m)
-  end
-
-  defp check_commit(s, m) do
-    cond do
-      Message.term(m) < s.curr_term ->
-        :stale
-
-      Log.last_index(s) == Message.last_index(m) ->
-        if check_valid(s, m) do
-          :merge
-        else
-          :pop
-        end
-
-      Log.last_index(s) < Message.last_index(m) ->
-        :request
-
-      Log.last_index(s) > Message.last_index(m) ->
-        if check_valid(s, m) do
-          :repair
-        else
-          :pop
-        end
-
-      true ->
-        :notyet
-    end
   end
 end
